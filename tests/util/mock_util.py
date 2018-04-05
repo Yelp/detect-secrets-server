@@ -2,7 +2,6 @@
  This is a collection of utility functions for easier, DRY testing.
 """
 from collections import namedtuple
-from contextlib import contextmanager
 from subprocess import CalledProcessError
 
 import mock
@@ -75,46 +74,3 @@ class PropertyMock(mock.Mock):
 
     def __get__(self, instance, owner):
         return self()
-
-
-def setup_global_mocks(obj, mocks=[]):  # pragma: no cover
-    """
-    Mocks out global objects, for general test cases.
-    :param obj:   unittest.TestCase
-    :param mocks: mixed; either modules_to_mock_out :string, or
-                  (modules_to_mock_out :string, autospec :boolean)
-    """
-    for item in mocks:
-        autospec = True
-        if not isinstance(item, str) and len(item) > 1:
-            autospec = item[1]
-            item = item[0]
-
-        m = mock.patch(item, autospec=autospec)
-
-        obj.addCleanup(m.stop)
-        m.start()
-
-
-def Any(cls):
-    """Used to call assert_called_with with any argument.
-
-    Usage: Any(list) => allows any list to pass as input
-    """
-    class Any(cls):
-        def __eq__(self, other):
-            return isinstance(other, cls)
-    return Any()
-
-
-@contextmanager
-def mock_open(data, namespace):
-    m = mock.mock_open(read_data=data)
-    with mock.patch(namespace, m):
-        yield m
-
-
-@contextmanager
-def mock_log(namespace):
-    with mock.patch(namespace, autospec=True) as m:
-        yield m

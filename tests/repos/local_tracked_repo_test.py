@@ -5,8 +5,8 @@ import unittest
 
 import mock
 
-from detect_secrets.server.local_tracked_repo import LocalTrackedRepo
-from tests.server.base_tracked_repo_test import mock_tracked_repo as _mock_tracked_repo
+from detect_secrets_server.repos.local_tracked_repo import LocalTrackedRepo
+from tests.repos.base_tracked_repo_test import mock_tracked_repo as _mock_tracked_repo
 from tests.util.mock_util import mock_subprocess
 from tests.util.mock_util import SubprocessMock
 
@@ -16,7 +16,7 @@ def mock_tracked_repo(**kwargs):
 
     # Need to mock out, because __init__ runs `git remote get-url origin`
     with mock.patch(
-            'detect_secrets.server.local_tracked_repo.subprocess.check_output',
+            'detect_secrets_server.repos.local_tracked_repo.subprocess.check_output',
             autospec=True
     ) as m:
         m.side_effect = mock_subprocess((

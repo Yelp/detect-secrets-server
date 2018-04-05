@@ -11,7 +11,7 @@ def potential_secret_factory(type_='type', filename='filename', lineno=1, secret
     return PotentialSecret(type_, filename, lineno, secret)
 
 
-def secrets_collection_factory(secrets=None, plugins=(), exclude_regex=''):
+def secrets_collection_factory(secrets=None, plugins=(), exclude_regex=''):  # pragma: no cover
     """
     :type secrets: list(dict)
     :param secrets: list of params to pass to add_secret.

@@ -4,14 +4,14 @@ import hashlib
 import unittest
 
 import mock
-
 from detect_secrets.plugins import SensitivityValues
-from detect_secrets.server.base_tracked_repo import DEFAULT_BASE_TMP_DIR
-from detect_secrets.server.base_tracked_repo import OverrideLevel
-from detect_secrets.server.repo_config import RepoConfig
-from detect_secrets.server.s3_tracked_repo import S3Config
-from detect_secrets.server.s3_tracked_repo import S3TrackedRepo
-from tests.server.base_tracked_repo_test import mock_tracked_repo as _mock_tracked_repo
+
+from detect_secrets_server.repos.base_tracked_repo import DEFAULT_BASE_TMP_DIR
+from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
+from detect_secrets_server.repos.repo_config import RepoConfig
+from detect_secrets_server.repos.s3_tracked_repo import S3Config
+from detect_secrets_server.repos.s3_tracked_repo import S3TrackedRepo
+from tests.repos.base_tracked_repo_test import mock_tracked_repo as _mock_tracked_repo
 from tests.util.mock_util import PropertyMock
 
 

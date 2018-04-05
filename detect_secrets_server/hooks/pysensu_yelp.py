@@ -1,12 +1,11 @@
-#!/usr/bin/python
 from __future__ import absolute_import
 
 import codecs
 
 import pysensu_yelp
 import yaml
-
 from detect_secrets.core.log import CustomLog
+
 from detect_secrets_server.hooks.base import BaseHook
 
 

@@ -5,16 +5,16 @@ import unittest
 from subprocess import CalledProcessError
 
 import mock
-
 from detect_secrets.core.baseline import get_secrets_not_in_baseline
 from detect_secrets.core.potential_secret import PotentialSecret
 from detect_secrets.core.secrets_collection import SecretsCollection
 from detect_secrets.plugins import SensitivityValues
-from detect_secrets.server.base_tracked_repo import BaseTrackedRepo
-from detect_secrets.server.base_tracked_repo import DEFAULT_BASE_TMP_DIR
-from detect_secrets.server.base_tracked_repo import get_filepath_safe
-from detect_secrets.server.base_tracked_repo import OverrideLevel
-from detect_secrets.server.repo_config import RepoConfig
+
+from detect_secrets_server.repos.base_tracked_repo import BaseTrackedRepo
+from detect_secrets_server.repos.base_tracked_repo import DEFAULT_BASE_TMP_DIR
+from detect_secrets_server.repos.base_tracked_repo import get_filepath_safe
+from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
+from detect_secrets_server.repos.repo_config import RepoConfig
 from tests.util.mock_util import mock_subprocess
 from tests.util.mock_util import PropertyMock
 from tests.util.mock_util import SubprocessMock
@@ -40,7 +40,7 @@ def mock_tracked_repo(cls=BaseTrackedRepo, **kwargs):
 
     defaults.update(kwargs)
 
-    with mock.patch('detect_secrets.server.base_tracked_repo.os.path.isdir') as m:
+    with mock.patch('detect_secrets_server.repos.base_tracked_repo.os.path.isdir') as m:
         m.return_value = True
         return cls(**defaults)
 
@@ -53,7 +53,7 @@ class BaseTrackedRepoTest(unittest.TestCase):
         assert get_filepath_safe('/path/to/../to', 'file') == '/path/to/file'
         assert get_filepath_safe('/path/to', '../../etc/pwd') is None
 
-    @mock.patch('detect_secrets.server.base_tracked_repo.os.path.isdir')
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.os.path.isdir')
     def test_load_from_file_success(self, mock_isdir):
         mock_isdir.return_value = True
 
@@ -76,7 +76,7 @@ class BaseTrackedRepoTest(unittest.TestCase):
             baseline='baseline',
             exclude_regex='',
         )
-        with mock.patch('detect_secrets.server.base_tracked_repo.codecs.open', m):
+        with mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open', m):
             repo = BaseTrackedRepo.load_from_file('will_be_mocked', repo_config=repo_config)
 
         assert repo.repo == 'repo-uri'
@@ -85,8 +85,8 @@ class BaseTrackedRepoTest(unittest.TestCase):
         assert repo.plugin_config.hex_limit == 3
         assert repo.plugin_config.base64_limit is None
 
-    # @mock.patch('detect_secrets.server.CustomLogObj')
-    @mock.patch('detect_secrets.server.base_tracked_repo.get_filepath_safe')
+    # @mock.patch('detect_secrets_server.repos.CustomLogObj')
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.get_filepath_safe')
     def test_load_from_file_failures(self, mock_filepath):
         repo_config = RepoConfig(
             base_tmp_dir=DEFAULT_BASE_TMP_DIR,
@@ -99,7 +99,7 @@ class BaseTrackedRepoTest(unittest.TestCase):
 
         # JSONDecodeError
         m = mock.mock_open(read_data='not a json')
-        with mock.patch('detect_secrets.server.base_tracked_repo.codecs.open', m):
+        with mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open', m):
             assert BaseTrackedRepo.load_from_file('repo', repo_config) is None
 
         # TypeError
@@ -110,7 +110,7 @@ class BaseTrackedRepoTest(unittest.TestCase):
         repo = mock_tracked_repo()
         assert repo.cron() == '* * 4 * *    detect-secrets-server --scan-repo pre-commit/pre-commit-hooks'
 
-    @mock.patch('detect_secrets.server.base_tracked_repo.subprocess.check_output', autospec=True)
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
     def test_scan_no_baseline(self, mock_subprocess_obj):
         repo = mock_tracked_repo()
         repo.baseline_file = None
@@ -149,9 +149,9 @@ class BaseTrackedRepoTest(unittest.TestCase):
         secrets = repo.scan()
         assert isinstance(secrets, SecretsCollection)
 
-    @mock.patch('detect_secrets.server.base_tracked_repo.get_secrets_not_in_baseline')
-    @mock.patch('detect_secrets.server.base_tracked_repo.SecretsCollection.load_baseline_from_string')
-    @mock.patch('detect_secrets.server.base_tracked_repo.subprocess.check_output', autospec=True)
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.get_secrets_not_in_baseline')
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.SecretsCollection.load_baseline_from_string')
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
     def test_scan_with_baseline(self, mock_subprocess_obj, mock_load_from_string, mock_apply):
         repo = mock_tracked_repo()
 
@@ -183,7 +183,7 @@ class BaseTrackedRepoTest(unittest.TestCase):
         assert len(secrets.data) == 1
         assert secrets.data['filenameA'][secretB] == secretB
 
-    @mock.patch('detect_secrets.server.base_tracked_repo.subprocess.check_output', autospec=True)
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
     def test_scan_bad_input(self, mock_subprocess_obj):
         repo = mock_tracked_repo()
 
@@ -216,7 +216,7 @@ class BaseTrackedRepoTest(unittest.TestCase):
             except CalledProcessError:
                 pass
 
-    @mock.patch('detect_secrets.server.base_tracked_repo.subprocess.check_output', autospec=True)
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
     def test_scan_with_nonexistant_last_saved_hash(self, mock_subprocess_obj):
         repo = mock_tracked_repo()
 
@@ -242,7 +242,7 @@ class BaseTrackedRepoTest(unittest.TestCase):
             except CalledProcessError:
                 assert False
 
-    @mock.patch('detect_secrets.server.base_tracked_repo.subprocess.check_output', autospec=True)
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
     def test_update(self, mock_subprocess):
         mock_subprocess.return_value = b'asdf'
         repo = mock_tracked_repo()
@@ -251,18 +251,18 @@ class BaseTrackedRepoTest(unittest.TestCase):
 
         assert repo.last_commit_hash == 'asdf'
 
-    @mock.patch('detect_secrets.server.base_tracked_repo.os.path.isfile')
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.os.path.isfile')
     def test_save_no_existing_file(self, mock_isfile):
         mock_isfile.return_value = False
         repo = mock_tracked_repo()
 
         m = mock.mock_open()
-        with mock.patch('detect_secrets.server.base_tracked_repo.codecs.open', m):
+        with mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open', m):
             repo.save()
 
         m().write.assert_called_once_with(json.dumps(repo.__dict__, indent=2))
 
-    @mock.patch('detect_secrets.server.base_tracked_repo.codecs.open')
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open')
     def test_save_bad_input(self, mock_open):
         # Needed for coverage
         repo = mock_tracked_repo()
@@ -272,8 +272,8 @@ class BaseTrackedRepoTest(unittest.TestCase):
             assert repo.save() is False
             assert mock_open.called is False
 
-    @mock.patch('detect_secrets.server.base_tracked_repo.codecs.open')
-    @mock.patch('detect_secrets.server.base_tracked_repo.os.path.isfile')
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open')
+    @mock.patch('detect_secrets_server.repos.base_tracked_repo.os.path.isfile')
     def test_save_override_levels(self, mock_isfile, mock_open):
         mock_isfile.return_value = True
         repo = mock_tracked_repo()
