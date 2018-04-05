@@ -17,9 +17,11 @@ setup(
     download_url='https://github.com/Yelp/detect-secrets-server/archive/{}.tar.gz'.format(VERSION),
     keywords=['secret-management', 'pre-commit', 'security', 'entropy-checks'],
     install_requires=[
+        'boto3',
         'detect-secrets',
         'enum34',
         'future',
+        'pysensu_yelp',
         'pyyaml',
         'unidiff',
     ],
