@@ -1,33 +1,48 @@
-from __future__ import absolute_import
+"""
+Example config file (yaml) format:
 
-import codecs
+    # Name needs to be one word
+    name: SecretFound
+    alert_after: 0
+
+    # -1 denotes exponential backoff
+    realert_every: -1
+    runbook: no-runbook-available
+    dependencies: []
+    team: team-security
+    irc_channels: []
+    notification_email: to-whom-it-may-concern@example.com
+    ticket: False
+    project: False
+    page: False
+    tip: detect_secrets found a secret
+
+    # status needs to be 1 (warning) or higher to send the email
+    status: 1
+
+    # null turns into None
+    ttl: null
+
+This will send an alert to Sensu, with the above configurations.
+See https://github.com/Yelp/pysensu-yelp for more details.
+"""
+from __future__ import absolute_import
 
 import pysensu_yelp
 import yaml
-from detect_secrets.core.log import CustomLog
 
-from detect_secrets_server.hooks.base import BaseHook
-
-
-CustomLogObj = CustomLog()
+from .base import BaseHook
 
 
-class PySensuYelpHook(BaseHook):  # pragma: no cover
-    """This sends an alert to Sensu as specified in the pysensu configuration file."""
+class PySensuYelpHook(BaseHook):
 
-    def __init__(self, config_file):
-        self.config_file = config_file
+    def __init__(self, config):
+        """
+        :type config: str, yaml formatted
+        """
+        self.config_data = yaml.safe_load(config)
 
-    def alert(self, secrets, repo_name):
-        try:
-            with codecs.open(self.config_file) as f:
-                config_data = yaml.safe_load(f)
-
-        except IOError:
-            CustomLogObj.getLogger().error(
-                'Unable to open pysensu config file: %s.', self.config_file
-            )
-
-            raise
-        config_data['output'] = "In repo " + repo_name + "\n" + str(secrets)
+    def alert(self, repo_name, secrets):
+        self.config_data['output'] = "In repo " + repo_name + "\n" + str(secrets)
         pysensu_yelp.send_event(**config_data)
+
