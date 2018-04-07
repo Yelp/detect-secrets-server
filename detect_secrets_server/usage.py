@@ -135,7 +135,7 @@ class HookDescriptor(namedtuple(
         return super(HookDescriptor, cls).__new__(
             cls,
             config_setting=config_setting,
-            **kwargs,
+            **kwargs
         )
 
 

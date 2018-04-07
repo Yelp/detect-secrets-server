@@ -24,4 +24,3 @@ class ExternalHook(BaseHook):
             repo_name,
             json.dumps(secrets),
         ])
-

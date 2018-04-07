@@ -20,4 +20,3 @@ class BaseHook(object):  # pragma: no cover
         :param secrets: dictionary; where keys are filenames
         """
         pass
-

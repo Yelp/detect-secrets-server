@@ -499,11 +499,10 @@ class ServerTest(unittest.TestCase):
             'baseline_file': '.secrets.baseline',
         }, indent=2))
 
-    @mock.patch('detect_secrets_server.__main__.os.path.isfile')
     @mock.patch('detect_secrets_server.__main__.CustomLogObj.getLogger')
     @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo.scan')
     @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo._read_tracked_file')
-    def test_main_scan_repo_scan_success_secrets_found(self, mock_file, mock_scan, mock_log, mock_is_file):
+    def test_main_scan_repo_scan_success_secrets_found(self, mock_file, mock_scan, mock_log):
         mock_file.return_value = {
             'sha': 'does_not_matter',
             'repo': 'repo_name',
@@ -513,7 +512,6 @@ class ServerTest(unittest.TestCase):
             'cron': '* * * * *',
             'baseline_file': '.secrets.baseline',
         }
-        mock_is_file.return_value = True
 
         mock_secret_collection = SecretsCollection()
         mock_secret_collection.data['junk'] = 'data'
