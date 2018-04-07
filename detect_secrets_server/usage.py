@@ -1,12 +1,9 @@
 from __future__ import absolute_import
 
 import argparse
-from collections import namedtuple
-import json
-from importlib import import_module
 import os
-import subprocess
-import sys
+from collections import namedtuple
+from importlib import import_module
 
 from detect_secrets.core.usage import ParserBuilder
 
@@ -114,7 +111,7 @@ class ServerParserBuilder(ParserBuilder):
 
 class HookDescriptor(namedtuple(
     'HookDescriptor',
-    (
+    [
         # The value that users can input, to refer to this hook.
         'display_name',
 
@@ -125,7 +122,7 @@ class HookDescriptor(namedtuple(
 
         # A HookDescriptor config enum
         'config_setting',
-    )
+    ]
 )):
     CONFIG_NOT_SUPPORTED = 0
     CONFIG_OPTIONAL = 1
@@ -182,7 +179,7 @@ class OutputOptions(object):
 
         self.parser.add_argument(
             '--output-config',
-            type=is_config_file,
+            type=is_valid_file,
             help=(
                 'Configuration file to initialize output hook, if required.'
             ),
@@ -190,9 +187,16 @@ class OutputOptions(object):
         )
 
     def consolidate_args(self, args):
+        if (args.initialize or args.scan_repo) and not args.output_hook:
+            raise argparse.ArgumentTypeError(
+                'Specifying an --output-hook is required, when initializing '
+                'or scanning your tracked repositories.'
+            )
+
         if args.output_hook:
-            args.output_hook = self._initialize_output_hook(args)
-            delattr(args, 'output_config') 
+            args.output_hook, args.output_hook_command = \
+                self._initialize_output_hook_and_raw_command(args)
+            delattr(args, 'output_config')
 
         return args
 
@@ -208,29 +212,30 @@ class OutputOptions(object):
         is_valid_file(
             hook,
             [
-                '\noutput-hook must be one of the following values:\n' + \
+                '\noutput-hook must be one of the following values:\n' +
                 '\n'.join(
                     map(
                         lambda x: '  - ' + x.display_name,
                         self.all_hooks,
                     )
-                ) + \
-                '\nor a valid executable filename.\n' + \
+                ) +
+                '\nor a valid executable filename.\n' +
                 '"{}" does not qualify.'.format(hook),
             ],
         )
         return hook
 
-    def _initialize_output_hook(self, args):
+    def _initialize_output_hook_and_raw_command(self, args):
         hook_found = None
-       
+        command = '--output-hook {}'.format(args.output_hook)
+
         for hook in self.all_hooks:
             if args.output_hook == hook.display_name:
                 hook_found = hook
                 break
- 
+
         if not hook_found:
-            return ExternalHook(args.output_hook)        
+            return ExternalHook(args.output_hook), command
 
         if hook_found.config_setting == HookDescriptor.CONFIG_REQUIRED and \
                 not args.output_config:
@@ -247,9 +252,11 @@ class OutputOptions(object):
         hook_class = getattr(module, hook_found.class_name)
 
         if hook_found.config_setting == HookDescriptor.CONFIG_NOT_SUPPORTED:
-            return hook_class()
-        
-        return hook_class(args.output_config)
+            return hook_class(), command
+
+        command += ' --output-config {}'.format(args.output_config)
+        with open(args.output_config) as f:
+            return hook_class(f.read()), command
 
 
 def is_valid_file(path, error_msg=None):
@@ -271,4 +278,3 @@ def is_config_file(path):
 
     with open(path) as f:
         return f.read()
-

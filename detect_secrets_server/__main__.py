@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import codecs
-import os.path
 import sys
 
 import yaml
@@ -261,7 +260,12 @@ def main(argv=None):
 
         print('# detect-secrets scanner')
         for repo in cron_repos:
-            print(repo.cron())
+            print(
+                '{} {}'.format(
+                    repo.cron(),
+                    args.output_hook_command,
+                )
+            )
 
     elif args.add_repo:
         add_repo(

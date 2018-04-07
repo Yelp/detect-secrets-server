@@ -245,13 +245,19 @@ class ServerTest(unittest.TestCase):
             ]
         }
 
-        assert main(['--initialize']) == 0
+        assert main(
+            '--initialize --output-hook examples/standalone_hook.py'.split()
+        ) == 0
         mock_print.assert_has_calls([
             mock.call('# detect-secrets scanner'),
             mock.call(
-                '1 2 3 4 5    detect-secrets-server --scan-repo yelp/detect-secrets'),
+                '1 2 3 4 5    detect-secrets-server --scan-repo yelp/detect-secrets '
+                '--output-hook examples/standalone_hook.py'
+            ),
             mock.call(
-                '2 3 4 5 6    detect-secrets-server --scan-repo some/random-repo --local'),
+                '2 3 4 5 6    detect-secrets-server --scan-repo some/random-repo --local '
+                '--output-hook examples/standalone_hook.py'
+            ),
         ])
         assert mock_print.call_count == 3
 
@@ -259,11 +265,15 @@ class ServerTest(unittest.TestCase):
     def test_main_initialize_failures(self, mock_print):
         with mock.patch('detect_secrets_server.__main__.initialize_repos_from_repo_yaml') as m:
             m.side_effect = IOError
-            assert main(['--initialize']) == 1
+            assert main(
+                '--initialize --output-hook examples/standalone_hook.py'.split()
+            ) == 1
 
         with mock.patch('detect_secrets_server.__main__.initialize_repos_from_repo_yaml') as m:
             m.return_value = []
-            assert main(['--initialize']) == 0
+            assert main(
+                '--initialize --output-hook examples/standalone_hook.py'.split()
+            ) == 0
             assert mock_print.call_count == 0
 
     @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output')
@@ -406,7 +416,12 @@ class ServerTest(unittest.TestCase):
     @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo.load_from_file')
     def test_main_scan_repo_unconfigured_repo(self, mock_load_from_file):
         mock_load_from_file.return_value = None
-        assert main(['--scan-repo', 'will-be-mocked']) == 1
+        assert main([
+            '--scan-repo',
+            'will-be-mocked',
+            '--output-hook',
+            'examples/standalone_hook.py'
+        ]) == 1
 
     @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo.scan')
     @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo._read_tracked_file')
@@ -422,7 +437,12 @@ class ServerTest(unittest.TestCase):
         }
 
         mock_scan.return_value = None
-        assert main(['--scan-repo', 'will-be-mocked']) == 1
+        assert main([
+            '--scan-repo',
+            'will-be-mocked',
+            '--output-hook',
+            'examples/standalone_hook.py',
+        ]) == 1
 
     @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
     @mock.patch('detect_secrets_server.__main__.CustomLogObj.getLogger')
@@ -455,7 +475,12 @@ class ServerTest(unittest.TestCase):
 
         m = mock.mock_open()
         with mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open', m):
-            assert main(['--scan-repo', 'will-be-mocked']) == 0
+            assert main([
+                '--scan-repo',
+                'will-be-mocked',
+                '--output-hook',
+                'examples/standalone_hook.py',
+            ]) == 0
 
         mock_log().info.assert_called_with(
             'SCAN COMPLETE - STATUS: clean for %s',
@@ -494,13 +519,18 @@ class ServerTest(unittest.TestCase):
         mock_secret_collection.data['junk'] = 'data'
         mock_scan.return_value = mock_secret_collection
 
-        with mock.patch('detect_secrets_server.__main__.PySensuYelpHook') as sensu, \
+        with mock.patch('detect_secrets_server.usage.ExternalHook') as hook, \
                 mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo.update') as update, \
                 mock.patch('detect_secrets.core.secrets_collection.SecretsCollection.json') as secrets_json:
-            assert main(['--scan-repo', 'will-be-mocked']) == 0
+            assert main([
+                '--scan-repo',
+                'will-be-mocked',
+                '--output-hook',
+                'examples/standalone_hook.py',
+            ]) == 0
 
             assert update.call_count == 0
-            assert sensu.call_count == 1
+            assert hook().alert.call_count == 1
             assert secrets_json.call_count == 1
 
     def test_main_no_args(self):
