@@ -5,6 +5,7 @@ import os
 from collections import namedtuple
 from importlib import import_module
 
+import yaml
 from detect_secrets.core.usage import ParserBuilder
 
 from detect_secrets_server.hooks.external import ExternalHook
@@ -15,43 +16,76 @@ class ServerParserBuilder(ParserBuilder):
 
     def __init__(self):
         super(ServerParserBuilder, self).__init__()
+        self.action_parser = ActionOptions(self.parser)
+        self.initialize_options_parser = InitializeOptions(self.parser)
         self.output_parser = OutputOptions(self.parser)
+
+        self.s3_parser = S3Options(self.parser)
 
         self._add_server_arguments()
 
     def parse_args(self, argv):
-        output = super(ServerParserBuilder, self).parse_args(argv)
+        """This does not extend off its parent, because we need to run
+        action_parser before plugins_parser.
+        """
+        output = self.parser.parse_args(argv)
+        self.initialize_options_parser.consolidate_args(output)
+        self.plugins_parser.consolidate_args(output)
 
         try:
+            self.action_parser.consolidate_args(output)
             self.output_parser.consolidate_args(output)
         except argparse.ArgumentTypeError as e:
             self.parser.error(e)
 
+        self.s3_parser.consolidate_args(output)
+
         return output
 
     def _add_server_arguments(self):
-        self._add_initialize_server_argument()\
-            ._add_scan_repo_argument()\
-            ._add_config_file_argument()\
-            ._add_add_repo_argument()\
-            ._add_local_repo_flag()\
-            ._add_s3_config_file_argument()\
-            ._add_set_baseline_argument()
-
+        self.action_parser.add_arguments()
+        self.initialize_options_parser.add_arguments()
         self.output_parser.add_arguments()
 
-    def _add_initialize_server_argument(self):
+        self.s3_parser.add_arguments()
+
+
+class ActionOptions(object):
+
+    def __init__(self, parser):
+        self.parser = parser.add_argument_group(
+            title='actions',
+            description=(
+                'These are the main actions that are used with this tool. '
+                'First, add the repositories that should be tracked with '
+                'either `--initialize` or `--add-repo`. Then, you can scan '
+                'your tracked repositories with `--scan-repo`.'
+            ),
+        )
+
+    def add_arguments(self):
         self.parser.add_argument(
             '--initialize',
             nargs='?',
+            type=is_config_file,
             const='repos.yaml',
             help='Initializes tracked repositories based on a supplied repos.yaml.',
-            metavar='CUSTOM_REPO_CONFIG_FILE',
+            metavar='REPO_CONFIG_FILE',
         )
 
-        return self
+        self.parser.add_argument(
+            '--add-repo',
+            nargs=1,
+            help=(
+                'Enables the addition of individual tracked git repos, without '
+                'including it in repos.yaml. Takes in a git URL (or path to repo, '
+                'if local) as an argument. '
+                'Newly tracked repositories will store HEAD as the last scanned '
+                'commit sha.'
+            ),
+            metavar='REPO_TO_ADD',
+        )
 
-    def _add_scan_repo_argument(self):
         self.parser.add_argument(
             '--scan-repo',
             nargs=1,
@@ -59,54 +93,213 @@ class ServerParserBuilder(ParserBuilder):
             metavar='REPO_TO_SCAN',
         )
 
-        return self
-
-    def _add_config_file_argument(self):
-        self.parser.add_argument(
-            '--config-file',
-            nargs=1,
-            help='Path to a config.yaml which will be used to initialize defaults and plugins.',
-        )
-
-        return self
-
-    def _add_add_repo_argument(self):
-        self.parser.add_argument(
-            '--add-repo',
-            nargs=1,
-            help=(
-                'Enables the addition of individual tracked git repos, without including it in the config file. '
-                'Takes in a git URL (or path to repo, if local) as an argument. '
-                'Newly tracked repos will store HEAD as the last scanned commit sha. '
-                'Also uses config file specified by `--config-file` to initialize default plugins and other settings.'
-            ),
-            metavar='REPO_TO_ADD'
-        )
-
-        return self
-
-    def _add_local_repo_flag(self):
         self.parser.add_argument(
             '-L',
             '--local',
             action='store_true',
             help=(
-                'Allows scanner to be pointed to locally stored repos (instead of git cloning). '
-                'Use with --scan-repo or --add-repo.'
+                'Allows scanner to be pointed to locally stored repos (instead '
+                'of git cloning). Use with --scan-repo or --add-repo.'
             ),
         )
 
-        return self
+    @staticmethod
+    def consolidate_args(args):
+        # Ensure only one action can be taken at one time.
+        action = None
+        for act in [args.initialize, args.add_repo, args.scan_repo]:
+            if not act:
+                continue
 
-    def _add_s3_config_file_argument(self):
-        self.parser.add_argument(
-            '--s3-config-file',
-            nargs=1,
-            help='Specify keys for storing files on Amazon S3.',
-            metavar='S3_CONFIG_FILE',
+            if action:
+                raise argparse.ArgumentTypeError(
+                    'Only one action can be selected at once.'
+                )
+
+            try:
+                action = act[0]
+            except KeyError:
+                # initialize loads a config file
+                action = act
+
+        # Still succeed, if no action is chosen.
+        if not action:
+            return
+
+        # There can only be one action at this point.
+        if args.add_repo:
+            if not args.local:
+                is_git_url(action)
+            else:
+                is_valid_file(action)
+        elif args.scan_repo and args.local:
+            is_valid_file(action)
+
+
+class InitializeOptions(object):
+
+    def __init__(self, parser):
+        self.parser = parser.add_argument_group(
+            title='initialize options',
+            description=(
+                'Configure settings to initialize the server secret scanner. '
+                'These settings are to be used with the `--initialize` flag, '
+                'or the `--add-repo` flag.'
+            ),
         )
 
-        return self
+    def add_arguments(self):
+        self.parser.add_argument(
+            '--baseline',
+            type=str,
+            nargs=1,
+            help=(
+                'Specify a default baseline filename to look for, in each '
+                'tracked repository.'
+            ),
+        )
+
+        self.parser.add_argument(
+            '--base-temp-dir',
+            type=str,
+            nargs=1,
+            help=(
+                'Specify location to clone git repositories to. '
+                'Default: ~/.detect-secrets-server'
+            ),
+        )
+
+        self.parser.add_argument(
+            '--exclude-regex',
+            type=str,
+            nargs=1,
+            help=(
+                'Filenames that match this regex will be ignored when scanning '
+                'for secrets.'
+            ),
+            metavar='REGEX',
+        )
+
+        self.parser.add_argument(
+            '--config-file',
+            type=is_config_file,
+            nargs=1,
+            help=(
+                'An alternative to specifying all default options through the '
+                'command line, this allows you to pass all options through a '
+                'yaml file instead. However, this does not take precedence '
+                'over command line arguments.'
+            ),
+        )
+
+    @staticmethod
+    def consolidate_args(args):
+        """This must be called *before* PluginOptions.consolidate_args.
+        config_file supports the following values:
+            plugins: dict
+                Allows the specification of default plugin settings, for
+                all repositories scanned. Keys are plugin classnames, and
+                values are their initialization values for those classes.
+
+                If the value is False, it will disable that plugin.
+            baseline: str
+                See help text for --baseline arg.
+            base_temp_dir: str
+                See help text for --base-temp-dir.
+            exclude_regex: str
+                See help text for --exclude-regex.
+        """
+        if args.config_file:
+            data = args.config_file[0]['default']
+            if 'plugins' in data:
+                InitializeOptions._merge_plugin_settings(args, data['plugins'])
+
+            if 'baseline' in data and not args.baseline:
+                args.baseline = [data['baseline']]
+
+            if 'base_temp_dir' in data and not args.base_temp_dir:
+                args.base_temp_dir = [os.path.abspath(
+                    os.path.expanduser(
+                        data['base_temp_dir']
+                    )
+                )]
+
+            if 'exclude_regex' in data and not args.exclude_regex:
+                args.exclude_regex = [data['exclude_regex']]
+
+        delattr(args, 'config_file')
+
+        if not args.base_temp_dir:
+            args.base_temp_dir = [os.path.expanduser('~/.detect-secrets-server')]
+
+        if not args.baseline:
+            args.baseline = ['']
+
+        if not args.exclude_regex:
+            args.exclude_regex = ['']
+
+    @staticmethod
+    def _merge_plugin_settings(args, plugins):
+        """Converts the plugins listed in the config file to their
+        corresponding command line flags, so that plugins_parser can
+        work its magic.
+        """
+        for classname, value in plugins.items():
+            arg_names = InitializeOptions._map_plugin_class_name_to_arg_names(
+                classname,
+            )
+
+            # If any of the command line arguments are specified for this
+            # plugin, then leave it as that (because of precedence).
+            if any(map(
+                lambda x: getattr(args, x) if x else None,
+                arg_names.values()
+            )):
+                continue
+
+            if value is None or value is False:
+                # Disable plugin
+                setattr(args, arg_names[True], True)
+            else:
+                # Some arguments don't have command line flags, so just
+                # skip this case.
+                if not arg_names[False]:
+                    continue
+
+                if not isinstance(value, list):
+                    value = [value]
+
+                # Only update if didn't specify on command line
+                setattr(args, arg_names[False], value)
+
+    @staticmethod
+    def _map_plugin_class_name_to_arg_names(classname):
+        """
+        :type classname: str
+        :param classname: plugin classname
+
+        :type disable: bool
+        :param disable: whether the plugin should be disabled
+
+        :rtype: dict(bool => str)
+        :returns: bool key references plugin's disabled flag argument name
+        """
+        mapping = {
+            'Base64HighEntropyString': {
+                False: 'base64_limit',
+                True: 'no_base64_string_scan',
+            },
+            'HexHighEntropyString': {
+                False: 'hex_limit',
+                True: 'no_hex_string_scan',
+            },
+            'PrivateKeyDetector': {
+                False: None,
+                True: 'no_private_key_scan',
+            },
+        }
+
+        return mapping[classname]
 
 
 class HookDescriptor(namedtuple(
@@ -259,6 +452,30 @@ class OutputOptions(object):
             return hook_class(f.read()), command
 
 
+class S3Options(object):
+
+    def __init__(self, parser):
+        self.parser = parser.add_argument_group(
+            title='s3 backend options',
+            description=(
+                'TODO'
+            ),
+        )
+
+    def add_arguments(self):
+        self.parser.add_argument(
+            '--s3-config-file',
+            nargs=1,
+            type=is_config_file,
+            help='Specify keys for storing files on Amazon S3.',
+            metavar='S3_CONFIG_FILE',
+        )
+
+    @staticmethod
+    def consolidate_args(args):
+        pass
+
+
 def is_valid_file(path, error_msg=None):
     if not os.path.exists(path):
         if not error_msg:
@@ -277,4 +494,11 @@ def is_config_file(path):
     is_valid_file(path)
 
     with open(path) as f:
-        return f.read()
+        return yaml.safe_load(f.read())
+
+
+def is_git_url(url):
+    if not url.startswith('git@') and not url.startswith('https://'):
+        raise argparse.ArgumentTypeError(
+            '"{}" is not a cloneable git URL'.format(url)
+        )
