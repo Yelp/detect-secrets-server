@@ -4,7 +4,6 @@ import codecs
 import hashlib
 import json
 import os
-import re
 import subprocess
 import sys
 from enum import Enum
@@ -15,33 +14,11 @@ from detect_secrets.core.secrets_collection import SecretsCollection
 from detect_secrets.plugins import initialize_plugins
 from detect_secrets.plugins import SensitivityValues
 
+from . import git
 from detect_secrets_server.repos.repo_config import RepoConfig
 
 
 DEFAULT_BASE_TMP_DIR = os.path.expanduser('~/.detect-secrets-server')
-IGNORED_FILE_EXTENSIONS = (
-    '7z',
-    'bmp',
-    'bz2',
-    'dmg',
-    'exe',
-    'gif',
-    'gz',
-    'ico',
-    'jar',
-    'jpg',
-    'jpeg',
-    'png',
-    'rar',
-    'realm',
-    's7z',
-    'tar',
-    'tif',
-    'tiff',
-    'webp',
-    'zip',
-)
-IGNORED_EXTENSION_REGEX = ''.join('.*\.' + extension + '|' for extension in IGNORED_FILE_EXTENSIONS)[:-1]
 
 CustomLogObj = CustomLog()
 
@@ -145,7 +122,10 @@ class BaseTrackedRepo(object):
         """
         self.clone_and_pull_repo()
         diff = self._get_latest_changes()
-        baseline = self._get_baseline()
+        baseline = git.get_baseline_file(
+            self.repo_location,
+            self.baseline_file,
+        )
 
         default_plugins = initialize_plugins(self.plugin_config)
 
@@ -169,15 +149,7 @@ class BaseTrackedRepo(object):
 
         :raises: subprocess.CalledProcessError
         """
-
-        sha = subprocess.check_output([
-            'git',
-            '--git-dir', self.repo_location,
-            'rev-parse',
-            'HEAD'
-        ], stderr=subprocess.STDOUT)
-
-        self.last_commit_hash = sha.decode('ascii').strip()
+        self.last_commit_hash = git.get_last_commit_hash(self.repo_location)
 
     def save(self, override_level=OverrideLevel.ASK_USER):
         """Saves tracked repo config to file. Returns True if successful.
@@ -250,31 +222,8 @@ class BaseTrackedRepo(object):
 
         :raises: subprocess.CalledProcessError
         """
-        # We clone a bare repo, because we're not interested in the files themselves.
-        # This will be more space efficient for local disk storage.
-        try:
-            subprocess.check_output([
-                'git',
-                'clone',
-                self.repo,
-                self.repo_location,
-                '--bare'
-            ], stderr=subprocess.STDOUT)
-
-        except subprocess.CalledProcessError as e:
-            error_msg = e.output.decode('ascii')
-
-            # Ignore this message, because it's expected if the repo has already been tracked.
-            match = re.match(r"fatal: destination path '[^']+' already exists", error_msg)
-            if not match:
-                raise
-
-        subprocess.check_output([
-            'git',
-            '--git-dir', self.repo_location,
-            '--work-tree', '.',
-            'pull',
-        ], stderr=subprocess.STDOUT)
+        git.clone_repo_to_location(self.repo, self.repo_location)
+        git.pull_master(self.repo_location)
 
     def get_blame(self, line_number, filename):
         """
@@ -282,32 +231,7 @@ class BaseTrackedRepo(object):
 
         :raises: subprocess.CalledProcessError
         """
-        return subprocess.check_output([
-            'git',
-            '--git-dir', self.repo_location,
-            '--work-tree', '.',
-            'blame',
-            self.get_main_branch(),
-            '-L', '{0},{1}'.format(line_number, line_number),
-            '--show-email',
-            '--line-porcelain',
-            '--', filename,
-        ], stderr=subprocess.STDOUT).decode('utf-8')
-
-    def get_main_branch(self):
-        """
-        :return: string
-                 e.g. master most of the time
-        :raises: subprocess.CalledProcessError
-        """
-        return subprocess.check_output([
-            'git',
-            '--git-dir',
-            self.repo_location,
-            'rev-parse',
-            '--abbrev-ref',
-            'HEAD'
-        ], stderr=subprocess.STDOUT).strip()
+        return git.get_blame(self.repo_location, filename, line_number)
 
     def _get_latest_changes(self):  # pragma: no cover
         """
@@ -318,26 +242,9 @@ class BaseTrackedRepo(object):
         :raises: subprocess.CalledProcessError
         """
         try:
-            filenames_in_diff = subprocess.check_output([
-                'git',
-                '--git-dir', self.repo_location,
-                'diff', self.last_commit_hash, 'HEAD',
-                '--name-only'
-            ], stderr=subprocess.STDOUT).decode('utf-8', 'ignore').splitlines()
-
-            trimmed_filesnames = [filename for filename in filenames_in_diff
-                                  if not re.match(IGNORED_EXTENSION_REGEX, filename)]
-
-            args = [
-                'git',
-                '--git-dir', self.repo_location,
-                'diff', self.last_commit_hash, 'HEAD',
-                '--',
-            ]
-            args.extend(trimmed_filesnames)
-            diff = subprocess.check_output(args, stderr=subprocess.STDOUT)
-
+            return git.get_diff(self.repo_location, self.last_commit_hash)
         except subprocess.CalledProcessError:
+            # Some debugging output for this strange case
             repo_location_exists = os.path.exists(self.repo_location)
             head_exists = os.path.exists(self.repo_location + '/logs/HEAD')
             first_line = ''
@@ -359,42 +266,10 @@ class BaseTrackedRepo(object):
             CustomLogObj.getLogger().error(alert)
 
             # The last_commit_hash may have been removed from the git logs,
-            # or detect-secrets is being run on an out-of-date repo, in which case it may re-alert on old secrets now.
+            # or detect-secrets is being run on an out-of-date repo, in which
+            # case it may re-alert on old secrets now.
             self.update()
             return ''
-
-        return diff.decode('utf-8', 'ignore')
-
-    def _get_baseline(self):
-        """Take the most updated baseline, because want to get the most updated
-        baseline. Note that this means it's still "user-dependent", but at the
-        same time, we want to ignore new explicit whitelists.
-        Also, this would mean that we **always** get a whitelist, if exists
-        (rather than worrying about fixing on a commit that has a whitelist)
-
-        :return: file contents of baseline_file
-        :raises: subprocess.CalledProcessError
-        """
-        if not self.baseline_file:
-            return
-
-        try:
-            baseline = subprocess.check_output([
-                'git',
-                '--git-dir', self.repo_location,
-                'show', 'HEAD:%s' % self.baseline_file,
-            ], stderr=subprocess.STDOUT)
-
-            return baseline.decode('ascii')
-
-        except subprocess.CalledProcessError as e:
-            error_msg = e.output.decode('ascii')
-
-            # Some repositories may not have baselines.
-            # This is a non-breaking error, if so.
-            match = re.match(r"fatal: Path '[^']+' does not exist", error_msg)
-            if not match:
-                raise
 
     @classmethod
     def get_tracked_filepath_prefix(cls, base_tmp_dir):
