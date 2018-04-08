@@ -6,9 +6,8 @@ import sys
 
 import yaml
 from detect_secrets.core.log import CustomLog
-from detect_secrets.plugins import SensitivityValues
 
-from detect_secrets_server.actions.initialize import initialize
+from detect_secrets_server import actions
 from detect_secrets_server.repos import tracked_repo_factory
 from detect_secrets_server.repos.base_tracked_repo import DEFAULT_BASE_TMP_DIR
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
@@ -33,85 +32,6 @@ def open_config_file(config_file):
         raise
 
     return data
-
-
-def add_repo(
-        repo,
-        plugin_sensitivity,
-        is_local_repo=False,
-        s3_config=None,
-        repo_config=None,
-):
-    """Sets up an individual repo for tracking.
-
-    :type repo: string
-    :param repo: git URL or local path of repo to create TrackedRepo from.
-
-    :type plugin_sensitivity: SensitivityValues
-    :param plugin_sensitivity: namedtuple of configurable sensitivity values for plugins to be run
-
-    :type is_local_repo: bool
-    :param is_local_repo: true, if repo to be scanned exists locally (rather than solely managed
-                          by this package)
-
-    :type s3_config: S3Config
-    :param s3_config: namedtuple of values to setup s3 connection. See `s3_tracked_repo` for more
-                      details.
-
-    :type repo_config: RepoConfig
-    :param repo_config: namedtuple of values used to configure repositories.
-    """
-    args = {
-        # We will set this value to HEAD upon first update
-        'sha': '',
-        'repo': repo,
-        'plugin_sensitivity': plugin_sensitivity,
-        's3_config': s3_config,
-        'repo_config': repo_config,
-    }
-
-    repo = tracked_repo_factory(is_local_repo, bool(s3_config))(**args)
-
-    # Clone the repo, if needed.
-    repo.clone_and_pull_repo()
-
-    # Make the last_commit_hash of repo point to HEAD
-    repo.update()
-
-    # Save the last_commit_hash, if we have nothing on file already.
-    repo.save(OverrideLevel.NEVER)
-
-
-def parse_sensitivity_values(args):
-    """
-    When configuring which plugins to run, the user is able to either
-    specify a configuration file (with --config-file), or select individual
-    values (e.g. --base64-limit).
-
-    This function handles parsing the values from these various places,
-    and returning them as a SensitivityValues namedtuple.
-
-    Order Precedence:
-        1. Values specified in config file.
-        2. Values specified inline. (eg. `--hex-limit 6`)
-        3. Default values for CLI arguments (specified in ParserBuilder)
-
-    :param args: parsed arguments from parse_args.
-    :return: SensitivityValues
-    """
-    default_plugins = {}
-    if args.config_file:
-        data = open_config_file(args.config_file[0]).get('default', {})
-        default_plugins = data.get('plugins', {})
-
-    return SensitivityValues(
-        base64_limit=default_plugins.get('Base64HighEntropyString') or
-        args.plugins.get('Base64HighEntropyString', {}).get('base64_limit', [])[0],
-        hex_limit=default_plugins.get('HexHighEntropyString') or
-        args.plugins.get('HexHighEntropyString', {}).get('hex_limit', [])[0],
-        private_key_detector=default_plugins.get('PrivateKeyDetector') or
-        'PrivateKeyDetector' in args.plugins,
-    )
 
 
 def parse_s3_config(args):
@@ -167,23 +87,16 @@ def main(argv=None):
     if args.verbose:    # pragma: no cover
         CustomLog.enableDebug(args.verbose)
 
-    plugin_sensitivity = parse_sensitivity_values(args)
     repo_config = parse_repo_config(args)
     s3_config = parse_s3_config(args)
 
     if args.initialize:
-        output = initialize(args)
+        output = actions.initialize.initialize(args)
         if output:
             print(output)
 
     elif args.add_repo:
-        add_repo(
-            args.add_repo[0],
-            plugin_sensitivity,
-            is_local_repo=args.local,
-            s3_config=s3_config,
-            repo_config=repo_config,
-        )
+        actions.initialize.add_repo(args)
 
     elif args.scan_repo:
         log = CustomLogObj.getLogger()

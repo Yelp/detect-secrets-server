@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 
 import os
-import subprocess
 
 from detect_secrets.core.log import CustomLog
 
-from detect_secrets_server.repos.base_tracked_repo import BaseTrackedRepo
+from . import git
+from .base_tracked_repo import BaseTrackedRepo
 
 
 CustomLogObj = CustomLog()
@@ -43,14 +43,10 @@ class LocalTrackedRepo(BaseTrackedRepo):
         # First, get the git URL from local repository
         if not path.endswith('/.git'):
             path = os.path.join(path, '.git')
-        repo_url = subprocess.check_output([
-            'git',
-            '--git-dir', path,
-            'remote',
-            'get-url',
-            'origin'
-        ], stderr=subprocess.STDOUT).strip()
-        return super(LocalTrackedRepo, cls)._get_repo_name(repo_url.decode('utf-8'))
+
+        return super(LocalTrackedRepo, cls)._get_repo_name(
+            git.get_remote_url(path)
+        )
 
     @classmethod
     def _initialize_tmp_dir(cls, base_tmp_dir):   # pragma: no cover

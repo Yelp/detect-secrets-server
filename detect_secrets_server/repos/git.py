@@ -94,6 +94,15 @@ def get_diff(directory, last_commit_hash):
     )
 
 
+def get_remote_url(directory):
+    return _git(
+        directory,
+        'remote',
+        'get-url',
+        'origin',
+    )
+
+
 def get_blame(directory, filename, line_number):
     """Returns the author who last made the change, to a given file,
     on a given line.

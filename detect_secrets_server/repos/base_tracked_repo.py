@@ -183,7 +183,12 @@ class BaseTrackedRepo(object):
 
     @property
     def internal_filename(self):
-        return hashlib.sha512(self.name.encode('utf-8')).hexdigest()
+        return self.hash_filename(self.name)
+
+    @staticmethod
+    def hash_filename(name):
+        """Used, so that it can be referenced in test cases"""
+        return hashlib.sha512(name.encode('utf-8')).hexdigest()
 
     @property
     def tracked_file_location(self):
@@ -362,7 +367,7 @@ class BaseTrackedRepo(object):
         for plugin_name in self.plugin_config:
             if self.plugin_config[plugin_name]:
                 key = list(self.plugin_config[plugin_name].keys())[0]
-                output['plugins'][plugin_name] = self.plugin_config[plugin_name][key]
+                output['plugins'][plugin_name] = self.plugin_config[plugin_name][key][0]
             else:
                 output['plugins'][plugin_name] = True
 

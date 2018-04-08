@@ -1,6 +1,7 @@
 import copy
 
 from detect_secrets_server.repos import tracked_repo_factory
+from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 
 
 def initialize(args):
@@ -29,6 +30,39 @@ def initialize(args):
         )
 
     return output
+
+
+def add_repo(args):
+    """Sets up an individual repository for tracking."""
+    repo_class = tracked_repo_factory(
+        args.local,
+        bool(args.s3_config_file),
+    )
+
+    # TODO: Pass in s3_config_file
+    repo = repo_class(
+        repo=args.add_repo[0],
+
+        # Will be updated to HEAD upon first update
+        sha='',
+
+        # TODO: Comment
+        cron='',
+
+        plugins=args.plugins,
+        base_temp_dir=args.base_temp_dir[0],
+        baseline_filename=args.baseline[0],
+        exclude_regex=args.exclude_regex[0],
+    )
+
+    # Clone repo, if needed.
+    repo.clone_and_pull_repo()
+
+    # Make the last_commit_hash of repo point to HEAD
+    repo.update()
+
+    # Save the last_commit_hash, if we have nothing on file already
+    repo.save(OverrideLevel.NEVER)
 
 
 def _load_from_config(
@@ -125,6 +159,7 @@ def _initialize_repo(
         entry.get('s3_backend', False),
     )
 
+    # TODO: Pass in s3_config_file
     return repo_class(
         repo=entry['repo'],
         sha=entry['sha'],

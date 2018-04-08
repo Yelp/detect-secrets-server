@@ -2,42 +2,73 @@
  This is a collection of utility functions for easier, DRY testing.
 """
 from collections import namedtuple
+from contextlib import contextmanager
 from subprocess import CalledProcessError
 
 import mock
 
 
-def mock_subprocess(case_tuple):
-    """We perform several subprocess.check_output calls, but we want to only mock
-    one of them at a time. This function helps us do that.
+@contextmanager
+def mock_git_calls(cases):
+    """We perform several subprocess.check_output calls for git commands,
+    but we only want to mock one at a time. This function helps us do that.
 
-    :type case_tuple: tuple of SubprocessMock
-    :param case_tuple: See docstring for SubprocessMock
+    However, the idea is that we *never* want to call out to git in tests,
+    so we should mock out everything that does that.
+
+    :type cases: iterable(SubprocessMock)
     """
-    def fn(inputs, **kwargs):
-        while len(inputs) >= 2 and inputs[1] in ['--git-dir', '--work-tree']:
-            # Remove `--git-dir <arg>` from git command.
-            # This is just a convenience / increased readability conditional
-            inputs = inputs[0:1] + inputs[3:]
+    # We need to use a dictionary, because python2.7 does not support
+    # the `nonlocal` keyword (and needs to share scope with
+    # _mock_single_git_call function)
+    current_case = {'index': 0}
 
-        str_input = ' '.join(
-            map(lambda x: x.decode('utf-8')
-                if not isinstance(x, str) else x, inputs)
-        )
-        for tup in case_tuple:
-            if not str_input.startswith(tup.expected_input):
-                # We don't care what is returned, if we're not mocking it.
-                continue
+    def _mock_subprocess_git_call(cmds, **kwargs):
+        command = ' '.join(cmds)
 
-            if tup.should_throw_exception:
-                raise CalledProcessError(1, '', tup.mocked_output)
+        try:
+            case = cases[current_case['index']]
+        except IndexError:
+            raise AssertionError(
+                '\nExpected: ""\n'
+                'Actual: "{}"'.format(
+                    command
+                )
+            )
+        current_case['index'] += 1
 
-            return tup.mocked_output
+        if command != case.expected_input:
+            # Pretty it up a little, for display
+            if not case.expected_input.startswith('git'):
+                case.expected_input = 'git ' + case.expected_input
 
-        # Default return value is just a byte-string.
-        return b''
+            raise AssertionError(
+                '\nExpected: "{}"\n'
+                'Actual: "{}"'.format(
+                    case.expected_input,
+                    command,
+                )
+            )
 
-    return fn
+        if case.should_throw_exception:
+            raise CalledProcessError(1, '', case.mocked_output)
+
+        return case.mocked_output
+
+    def _mock_single_git_call(directory, *args):
+        return _mock_subprocess_git_call(['git', *args])
+
+    # mock_subprocess is needed for `clone_repo_to_location`.
+    with mock.patch(
+            'detect_secrets_server.repos.git._git'
+    ) as mock_git, \
+        mock.patch(
+            'detect_secrets_server.repos.git.subprocess.check_output'
+    ) as mock_subprocess:
+        mock_git.side_effect = _mock_single_git_call
+        mock_subprocess.side_effect = _mock_subprocess_git_call
+
+        yield
 
 
 class SubprocessMock(namedtuple(
@@ -57,10 +88,10 @@ class SubprocessMock(namedtuple(
     :param mocked_output: value you want to return, when expected_input matches.
 
     :type should_throw_exception: bool
-    :param should_throw_exception: if True, will throw subprocess.CalledProcessError with
-                                   mocked output as error message
+    :param should_throw_exception: if True, will throw subprocess.CalledProcessError
+                                   with mocked output as error message
     """
-    def __new__(cls, expected_input, mocked_output, should_throw_exception=False):
+    def __new__(cls, expected_input, mocked_output='', should_throw_exception=False):
         return super(SubprocessMock, cls).__new__(
             cls,
             expected_input,
