@@ -10,18 +10,13 @@ import mock
 from detect_secrets.core.secrets_collection import SecretsCollection
 from detect_secrets.plugins import SensitivityValues
 
-from detect_secrets_server.__main__ import initialize_repos_from_repo_yaml
 from detect_secrets_server.__main__ import main
 from detect_secrets_server.__main__ import parse_args
 from detect_secrets_server.__main__ import parse_s3_config
 from detect_secrets_server.__main__ import parse_sensitivity_values
 from detect_secrets_server.__main__ import set_authors_for_found_secrets
-from detect_secrets_server.repos.base_tracked_repo import BaseTrackedRepo
-from detect_secrets_server.repos.local_tracked_repo import LocalTrackedRepo
 from detect_secrets_server.repos.repo_config import RepoConfig
 from detect_secrets_server.repos.s3_tracked_repo import S3Config
-from detect_secrets_server.repos.s3_tracked_repo import S3LocalTrackedRepo
-from detect_secrets_server.repos.s3_tracked_repo import S3TrackedRepo
 from tests.util.factories import mock_repo_factory
 from tests.util.factories import secrets_collection_factory
 from tests.util.mock_util import mock_subprocess
@@ -129,152 +124,6 @@ class ServerTest(unittest.TestCase):
         assert isinstance(output, S3Config)
         assert output.bucket_name == 'bucket_name'
         assert output.prefix == 'prefix'
-
-    @mock.patch('detect_secrets_server.__main__.open_config_file')
-    def test_initialize_repos_from_repo_yaml_no_tracked_repos(self, mock_data):
-        mock_data.return_value = {
-            'nothing': 'important'
-        }
-
-        assert initialize_repos_from_repo_yaml(
-            'will_be_mocked',
-            SensitivityValues(),
-            self._mock_repo_config(),
-        ) == []
-
-    @mock.patch('detect_secrets_server.__main__.open_config_file')
-    def test_initialize_repos_from_repo_yaml_no_s3_config(self, mock_data):
-        mock_data.return_value = {
-            'tracked': [
-                {
-                    'sha': 'does_not_matter',
-                    'repo': 'does_not_matter',
-                    's3_backed': True,
-                }
-            ]
-        }
-
-        assert initialize_repos_from_repo_yaml(
-            'will_be_mocked',
-            SensitivityValues,
-            self._mock_repo_config(),
-        ) == []
-
-    @mock.patch('detect_secrets_server.repos.local_tracked_repo.subprocess')
-    @mock.patch('detect_secrets_server.__main__.open_config_file')
-    def test_initialize_repos_from_repo_yaml_success(self, mock_data, mock_subprocess):
-        def _create_mock_tracked_repo_repr(**kwargs):
-            defaults = {
-                'sha': 'does_not_matter',
-                'repo': 'does_not_matter',
-            }
-
-            defaults.update(kwargs)
-
-            return defaults
-
-        mock_data.return_value = {
-            'tracked': [
-                _create_mock_tracked_repo_repr(
-                    # Test that it can also be overriden here.
-                    plugins={
-                        'Base64HighEntropyString': 2,
-                    },
-                    baseline_file='is_included',
-                ),
-                _create_mock_tracked_repo_repr(
-                    # Test local repo
-                    is_local_repo=True,
-                ),
-                _create_mock_tracked_repo_repr(
-                    # Test S3 remote repo
-                    s3_backed=True,
-                ),
-                _create_mock_tracked_repo_repr(
-                    # Test S3 local repo
-                    is_local_repo=True,
-                    s3_backed=True,
-                ),
-            ]
-        }
-
-        with mock.patch.object(S3TrackedRepo, '_initialize_s3_client'):
-            output = initialize_repos_from_repo_yaml(
-                'will_be_mocked',
-                SensitivityValues(
-                    base64_limit=1,
-                    hex_limit=2,
-                ),
-                self._mock_repo_config(),
-                S3Config(
-                    s3_creds_file='filename',
-                    bucket_name='bucket',
-                    prefix='prefix',
-                )
-            )
-
-        assert isinstance(output[0], BaseTrackedRepo)
-        assert isinstance(output[1], LocalTrackedRepo)
-        assert isinstance(output[2], S3TrackedRepo)
-        assert isinstance(output[3], S3LocalTrackedRepo)
-
-        assert output[0].plugin_config.base64_limit == 2
-        assert output[0].baseline_file == 'is_included'
-        assert output[1].plugin_config.base64_limit == 1
-
-    @mock.patch('detect_secrets_server.__main__.print')
-    @mock.patch('detect_secrets_server.repos.local_tracked_repo.subprocess.check_output')
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo.save')
-    @mock.patch('detect_secrets_server.__main__.open_config_file')
-    def test_main_initialize_success(self, mock_data, mock_save, mock_repo_url, mock_print):
-        mock_save.return_value = True
-        mock_repo_url.return_value = b'git@github.com:some/random-repo.git'
-        mock_data.return_value = {
-            'tracked': [
-                {
-                    'repo': 'git@github.com:yelp/detect-secrets.git',
-                    'sha': 'some_sha_value',
-                    'cron': '1 2 3 4 5',
-                },
-                {
-                    'repo': '/file/to/local/repo',
-                    'is_local_repo': True,
-                    'sha': 'some_other_value',
-                    'cron': '2 3 4 5 6',
-                },
-            ]
-        }
-
-        assert main(
-            '--initialize --output-hook examples/standalone_hook.py'.split()
-        ) == 0
-        mock_print.assert_has_calls([
-            mock.call('# detect-secrets scanner'),
-            mock.call(
-                '1 2 3 4 5    detect-secrets-server --scan-repo yelp/detect-secrets '
-                '--output-hook examples/standalone_hook.py'
-            ),
-            mock.call(
-                '2 3 4 5 6    detect-secrets-server --scan-repo some/random-repo --local '
-                '--output-hook examples/standalone_hook.py'
-            ),
-        ])
-        assert mock_print.call_count == 3
-
-    @mock.patch('detect_secrets_server.__main__.print')
-    def test_main_initialize_failures(self, mock_print):
-        with mock.patch('detect_secrets_server.__main__.initialize_repos_from_repo_yaml') as m:
-            m.side_effect = IOError
-            assert main(
-                '--initialize --output-hook examples/standalone_hook.py'.split()
-            ) == 1
-
-        with mock.patch('detect_secrets_server.__main__.initialize_repos_from_repo_yaml') as m:
-            m.return_value = []
-            assert main(
-                '--initialize --output-hook examples/standalone_hook.py'.split()
-            ) == 0
-            assert mock_print.call_count == 0
 
     @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output')
     def test_main_add_repo_remote(self, mock_subprocess_obj):

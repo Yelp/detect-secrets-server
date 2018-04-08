@@ -8,6 +8,7 @@ import yaml
 from detect_secrets.core.log import CustomLog
 from detect_secrets.plugins import SensitivityValues
 
+from detect_secrets_server.actions.initialize import initialize
 from detect_secrets_server.repos import tracked_repo_factory
 from detect_secrets_server.repos.base_tracked_repo import DEFAULT_BASE_TMP_DIR
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
@@ -146,77 +147,6 @@ def parse_repo_config(args):
     )
 
 
-def initialize_repos_from_repo_yaml(
-    repo_yaml,
-    plugin_sensitivity,
-    repo_config,
-    s3_config=None
-):
-    """For expected yaml file format, see `repos.yaml.sample`
-
-    :type repo_yaml: string
-    :param repo_yaml: filename of config file to read and parse
-
-    :type plugin_sensitivity: SensitivityValues
-
-    :type repo_config: RepoConfig
-
-    :type s3_config: S3Config
-
-    :return: list of TrackedRepos
-    :raises: IOError
-    """
-    data = open_config_file(repo_yaml)
-
-    output = []
-    if data.get('tracked') is None:
-        return output
-
-    for entry in data['tracked']:
-        sensitivity = plugin_sensitivity
-        if entry.get('plugins'):
-            # Merge plugin sensitivities
-            plugin_dict = plugin_sensitivity._asdict()
-
-            # Use SensitivityValues constructor to convert values
-            entry_sensitivity = SensitivityValues(**entry['plugins'])
-            plugin_dict.update(entry_sensitivity._asdict())
-
-            sensitivity = SensitivityValues(**plugin_dict)
-
-        entry['plugin_sensitivity'] = sensitivity
-
-        config = repo_config
-        if 'baseline_file' in entry:
-            config = RepoConfig(
-                base_tmp_dir=repo_config.base_tmp_dir,
-                exclude_regex=repo_config.exclude_regex,
-                baseline=entry['baseline_file'],
-            )
-
-        entry['repo_config'] = config
-
-        if entry.get('s3_backed') and s3_config is None:
-            CustomLogObj.getLogger().error(
-                (
-                    'Unable to load s3 config for %s. Make sure to specify '
-                    '--s3-config-file for s3_backed repos!'
-                ),
-                entry.get('repo'),
-            )
-            continue
-        entry['s3_config'] = s3_config
-
-        # After setting up all arguments, create respective object.
-        repo = tracked_repo_factory(
-            entry.get('is_local_repo', False),
-            entry.get('s3_backed', False),
-        )
-        output.append(repo(**entry))
-
-    return output
-
-
 def parse_args(argv):
     return ServerParserBuilder().parse_args(argv)
 
@@ -242,30 +172,9 @@ def main(argv=None):
     s3_config = parse_s3_config(args)
 
     if args.initialize:
-        # initialize sets up the local file storage for tracking
-        try:
-            tracked_repos = initialize_repos_from_repo_yaml(
-                args.initialize,
-                plugin_sensitivity,
-                repo_config,
-                s3_config,
-            )
-        except IOError:
-            # Error handled in initialize_repos_from_repo_yaml
-            return 1
-
-        cron_repos = [repo for repo in tracked_repos if repo.save()]
-        if not cron_repos:
-            return 0
-
-        print('# detect-secrets scanner')
-        for repo in cron_repos:
-            print(
-                '{} {}'.format(
-                    repo.cron(),
-                    args.output_hook_command,
-                )
-            )
+        output = initialize(args)
+        if output:
+            print(output)
 
     elif args.add_repo:
         add_repo(

@@ -12,7 +12,7 @@ from enum import Enum
 from detect_secrets.core.baseline import get_secrets_not_in_baseline
 from detect_secrets.core.log import CustomLog
 from detect_secrets.core.secrets_collection import SecretsCollection
-from detect_secrets.plugins import initialize
+from detect_secrets.plugins import initialize_plugins
 from detect_secrets.plugins import SensitivityValues
 
 from detect_secrets_server.repos.repo_config import RepoConfig
@@ -68,8 +68,10 @@ class BaseTrackedRepo(object):
             self,
             sha,
             repo,
-            plugin_sensitivity,
-            repo_config,
+            plugins,
+            base_temp_dir,
+            baseline_filename,
+            exclude_regex,
             cron='',
             **kwargs
     ):
@@ -80,12 +82,8 @@ class BaseTrackedRepo(object):
         :type repo: string
         :param repo: git URL or local path of repo
 
-        :type plugin_sensitivity: SensitivityValues
-        :param plugin_sensitivity: values to configure various plugins
-
-        :type repo_config: RepoConfig
-        :param repo_config: values to configure repos, See `server_main` for more
-                      details.
+        :type plugins: dict
+        :param plugins: values to configure various plugins
 
         :type cron: string
         :param cron: crontab syntax
@@ -93,14 +91,14 @@ class BaseTrackedRepo(object):
         self.last_commit_hash = sha
         self.repo = repo
         self.crontab = cron
-        self.plugin_config = plugin_sensitivity
-        self.base_tmp_dir = repo_config.base_tmp_dir
-        self.baseline_file = repo_config.baseline
-        self.exclude_regex = repo_config.exclude_regex
+        self.plugin_config = plugins
+        self.base_tmp_dir = base_temp_dir
+        self.baseline_file = baseline_filename
+        self.exclude_regex = exclude_regex
 
         self.name = self._get_repo_name(repo)
 
-        self._initialize_tmp_dir(repo_config.base_tmp_dir)
+        self._initialize_tmp_dir(base_temp_dir)
 
     @classmethod
     def load_from_file(cls, repo_name, repo_config, *args, **kwargs):
@@ -149,7 +147,7 @@ class BaseTrackedRepo(object):
         diff = self._get_latest_changes()
         baseline = self._get_baseline()
 
-        default_plugins = initialize(self.plugin_config)
+        default_plugins = initialize_plugins(self.plugin_config)
 
         secrets = SecretsCollection(default_plugins, self.exclude_regex)
 
@@ -485,8 +483,12 @@ class BaseTrackedRepo(object):
             'baseline_file': self.baseline_file,
         }
 
-        # Add plugin_config
-        for plugin_name in self.plugin_config._fields:
-            output['plugins'][plugin_name] = getattr(self.plugin_config, plugin_name)
+        # Add plugin_config. Once again, this assumes one initialization variable.
+        for plugin_name in self.plugin_config:
+            if self.plugin_config[plugin_name]:
+                key = list(self.plugin_config[plugin_name].keys())[0]
+                output['plugins'][plugin_name] = self.plugin_config[plugin_name][key]
+            else:
+                output['plugins'][plugin_name] = True
 
         return output
