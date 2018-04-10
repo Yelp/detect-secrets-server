@@ -2,14 +2,12 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import codecs
-import os.path
 import sys
 
 import yaml
 from detect_secrets.core.log import CustomLog
 from detect_secrets.plugins import SensitivityValues
 
-from detect_secrets_server.hooks.pysensu_yelp import PySensuYelpHook
 from detect_secrets_server.repos import tracked_repo_factory
 from detect_secrets_server.repos.base_tracked_repo import DEFAULT_BASE_TMP_DIR
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
@@ -19,7 +17,6 @@ from detect_secrets_server.usage import ServerParserBuilder
 
 
 CustomLogObj = CustomLog()
-PYSENSU_CONFIG = '.pysensu.config.yaml'
 
 
 def open_config_file(config_file):
@@ -263,7 +260,12 @@ def main(argv=None):
 
         print('# detect-secrets scanner')
         for repo in cron_repos:
-            print(repo.cron())
+            print(
+                '{} {}'.format(
+                    repo.cron(),
+                    args.output_hook_command,
+                )
+            )
 
     elif args.add_repo:
         add_repo(
@@ -300,8 +302,7 @@ def main(argv=None):
                 'secrets': secrets,
             }
             log.error(alert)
-            if os.path.isfile(PYSENSU_CONFIG):
-                PySensuYelpHook(PYSENSU_CONFIG).alert(secrets, repo.name)
+            args.output_hook.alert(repo.name, secrets)
         else:
             log.info('SCAN COMPLETE - STATUS: clean for %s', repo.name)
 
