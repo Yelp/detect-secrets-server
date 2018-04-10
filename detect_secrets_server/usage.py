@@ -9,6 +9,7 @@ import yaml
 from detect_secrets.core.usage import ParserBuilder
 
 from detect_secrets_server.hooks.external import ExternalHook
+from detect_secrets_server.plugins import PluginsConfigParser
 
 
 class ServerParserBuilder(ParserBuilder):
@@ -245,7 +246,7 @@ class InitializeOptions(object):
         work its magic.
         """
         for classname, value in plugins.items():
-            arg_names = InitializeOptions._map_plugin_class_name_to_arg_names(
+            arg_names = PluginsConfigParser.class_name_to_arg_names(
                 classname,
             )
 
@@ -271,35 +272,6 @@ class InitializeOptions(object):
 
                 # Only update if didn't specify on command line
                 setattr(args, arg_names[False], value)
-
-    @staticmethod
-    def _map_plugin_class_name_to_arg_names(classname):
-        """
-        :type classname: str
-        :param classname: plugin classname
-
-        :type disable: bool
-        :param disable: whether the plugin should be disabled
-
-        :rtype: dict(bool => str)
-        :returns: bool key references plugin's disabled flag argument name
-        """
-        mapping = {
-            'Base64HighEntropyString': {
-                False: 'base64_limit',
-                True: 'no_base64_string_scan',
-            },
-            'HexHighEntropyString': {
-                False: 'hex_limit',
-                True: 'no_hex_string_scan',
-            },
-            'PrivateKeyDetector': {
-                False: None,
-                True: 'no_private_key_scan',
-            },
-        }
-
-        return mapping[classname]
 
 
 class HookDescriptor(namedtuple(

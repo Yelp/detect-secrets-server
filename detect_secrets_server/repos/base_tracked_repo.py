@@ -12,10 +12,9 @@ from detect_secrets.core.baseline import get_secrets_not_in_baseline
 from detect_secrets.core.log import CustomLog
 from detect_secrets.core.secrets_collection import SecretsCollection
 from detect_secrets.plugins import initialize_plugins
-from detect_secrets.plugins import SensitivityValues
 
 from . import git
-from detect_secrets_server.repos.repo_config import RepoConfig
+from detect_secrets_server.plugins import PluginsConfigParser
 
 
 DEFAULT_BASE_TMP_DIR = os.path.expanduser('~/.detect-secrets-server')
@@ -78,33 +77,35 @@ class BaseTrackedRepo(object):
         self._initialize_tmp_dir(base_temp_dir)
 
     @classmethod
-    def load_from_file(cls, repo_name, repo_config, *args, **kwargs):
+    def load_from_file(
+            cls,
+            repo_name,
+            base_temp_dir,
+            baseline_filename,
+            exclude_regex,
+            *args,
+            **kwargs
+    ):
         """This will load a TrackedRepo to memory, from a given tracked file.
         For automated management without a database.
 
         :type repo_name: string
         :param repo_name: git URL or local path of repo
 
-        :type repo_config: RepoConfig
-        :param repo_config: values to configure repos, See `server_main` for more
-                      details.
-
         :return: TrackedRepo
         """
         repo_name = cls._get_repo_name(repo_name)
 
-        data = cls._read_tracked_file(repo_name, repo_config.base_tmp_dir)
+        data = cls._read_tracked_file(repo_name, base_temp_dir)
         if data is None:
             return None
 
         data = cls._modify_tracked_file_contents(data)
 
         # Add server-side configuration to repo
-        data['repo_config'] = RepoConfig(
-            base_tmp_dir=repo_config.base_tmp_dir,
-            exclude_regex=repo_config.exclude_regex,
-            baseline=data['baseline_file'],
-        )
+        data['base_temp_dir'] = base_temp_dir
+        data['baseline_filename'] = baseline_filename
+        data['exclude_regex'] = exclude_regex
 
         return cls(**data)
 
@@ -230,7 +231,7 @@ class BaseTrackedRepo(object):
         git.clone_repo_to_location(self.repo, self.repo_location)
         git.pull_master(self.repo_location)
 
-    def get_blame(self, line_number, filename):
+    def get_blame(self, filename, line_number):
         """
         :return: string
 
@@ -346,8 +347,7 @@ class BaseTrackedRepo(object):
         :param data: pretty much the layout of __dict__
         :return: dict
         """
-        # Need to change plugins to type SensitivityValues
-        data['plugin_sensitivity'] = SensitivityValues(**data['plugins'])
+        data['plugins'] = PluginsConfigParser.from_config(data['plugins']).to_args()
 
         return data
 
@@ -358,17 +358,9 @@ class BaseTrackedRepo(object):
         output = {
             'sha': self.last_commit_hash,
             'repo': self.repo,
-            'plugins': {},
+            'plugins': PluginsConfigParser.from_args(self.plugin_config).to_config(),
             'cron': self.crontab,
             'baseline_file': self.baseline_file,
         }
-
-        # Add plugin_config. Once again, this assumes one initialization variable.
-        for plugin_name in self.plugin_config:
-            if self.plugin_config[plugin_name]:
-                key = list(self.plugin_config[plugin_name].keys())[0]
-                output['plugins'][plugin_name] = self.plugin_config[plugin_name][key][0]
-            else:
-                output['plugins'][plugin_name] = True
 
         return output

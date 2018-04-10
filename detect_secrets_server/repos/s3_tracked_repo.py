@@ -79,7 +79,14 @@ class S3TrackedRepo(BaseTrackedRepo):
         )
 
     @classmethod
-    def load_from_file(cls, repo_name, repo_config, s3_config):
+    def load_from_file(
+            cls,
+            repo_name,
+            base_temp_dir,
+            baseline_filename,
+            exclude_regex,
+            s3_config
+    ):
         """Just download the file from S3 and then call super load_from_file."""
 
         repo_name_used_for_file_save = cls._get_repo_name(repo_name)
@@ -87,11 +94,10 @@ class S3TrackedRepo(BaseTrackedRepo):
         # Need to do this manually, because classmethod can't access properties.
         internal_filename = hashlib.sha512(repo_name_used_for_file_save.encode('utf-8')).hexdigest()
 
-        base_tmp_dir = repo_config.base_tmp_dir
-        if not base_tmp_dir:
-            base_tmp_dir = DEFAULT_BASE_TMP_DIR
+        if not base_temp_dir:
+            base_temp_dir = DEFAULT_BASE_TMP_DIR
 
-        tracked_filepath = cls._get_tracked_file_location(base_tmp_dir, internal_filename)
+        tracked_filepath = cls._get_tracked_file_location(base_temp_dir, internal_filename)
 
         cls._initialize_s3_client(s3_config.s3_creds_file)
         cls._download(
@@ -101,12 +107,17 @@ class S3TrackedRepo(BaseTrackedRepo):
             tracked_filepath,
         )
 
-        return cls._load_from_file(repo_name, repo_config)
+        return cls._load_from_file(
+            repo_name,
+            base_temp_dir,
+            baseline_filename,
+            exclude_regex
+        )
 
     @classmethod
-    def _load_from_file(cls, repo_name, repo_config):    # pragma: no cover
+    def _load_from_file(cls, *args):    # pragma: no cover
         """For easier mocking"""
-        return super(S3TrackedRepo, cls).load_from_file(repo_name, repo_config)
+        return super(S3TrackedRepo, cls).load_from_file(*args)
 
     def save(self, override_level=OverrideLevel.ASK_USER):
         success = self._parent_save(override_level)

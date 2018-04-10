@@ -7,8 +7,8 @@ from contextlib import contextmanager
 import mock
 import pytest
 
-from detect_secrets_server.actions.initialize import add_repo
-from detect_secrets_server.actions.initialize import initialize
+from detect_secrets_server.actions import add_repo
+from detect_secrets_server.actions import initialize
 from detect_secrets_server.repos.base_tracked_repo import BaseTrackedRepo
 from detect_secrets_server.usage import ServerParserBuilder
 from tests.util.mock_util import mock_git_calls
@@ -354,18 +354,3 @@ def mock_repo_class(classname):
             'detect_secrets_server.repos.{}'.format(classname),
     ) as repo_class:
         yield repo_class
-
-
-@pytest.fixture
-def mock_file_operations():
-    """Mocks out certain calls in BaseTrackedRepo that attempts to
-    write to disk.
-    """
-    mock_open = mock.mock_open()
-    with mock.patch(
-        'detect_secrets_server.repos.BaseTrackedRepo._initialize_tmp_dir',
-    ), mock.patch(
-        'detect_secrets_server.repos.base_tracked_repo.codecs.open',
-        mock_open,
-    ):
-        yield mock_open()

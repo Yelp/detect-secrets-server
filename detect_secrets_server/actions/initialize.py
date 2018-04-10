@@ -1,5 +1,4 @@
-import copy
-
+from detect_secrets_server.plugins import PluginsConfigParser
 from detect_secrets_server.repos import tracked_repo_factory
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 
@@ -13,9 +12,9 @@ def initialize(args):
     tracked_repos = _load_from_config(
         args.initialize,
         args.plugins,
-        args.base_temp_dir,
-        args.baseline,
-        args.exclude_regex,
+        args.base_temp_dir[0],
+        args.baseline[0],
+        args.exclude_regex[0],
     )
 
     cron_repos = [repo for repo in tracked_repos if repo.save()]
@@ -146,13 +145,15 @@ def _initialize_repo(
     :type exclude_regex: str
     """
     if entry.get('plugins'):
-        default_plugins = _merge_plugins(entry['plugins'], default_plugins)
+        default_plugins = PluginsConfigParser.from_args(default_plugins)
+        default_plugins.update(PluginsConfigParser.from_config(entry['plugins']))
+        default_plugins = default_plugins.to_args()
 
     if entry.get('baseline_file'):
-        baseline_filename = [entry['baseline_file']]
+        baseline_filename = entry['baseline_file']
 
     if entry.get('exclude_regex'):
-        exclude_regex = [entry['exclude_regex']]
+        exclude_regex = entry['exclude_regex']
 
     repo_class = tracked_repo_factory(
         entry.get('is_local_repo', False),
@@ -165,39 +166,7 @@ def _initialize_repo(
         sha=entry['sha'],
         cron=entry['cron'],
         plugins=default_plugins,
-        base_temp_dir=base_temp_dir[0],
-        baseline_filename=baseline_filename[0],
-        exclude_regex=exclude_regex[0],
+        base_temp_dir=base_temp_dir,
+        baseline_filename=baseline_filename,
+        exclude_regex=exclude_regex,
     )
-
-
-def _merge_plugins(plugins, default_plugins):
-    """
-    NOTE: As with detect_secrets.plugins.__init__.initialize_plugins, this
-    assumes there is at most one initialization parameter. If upstream
-    changes, this would also have to change.
-
-    :type plugins: dict
-    :param plugins: key,value pairs of plugins, to initialization values
-
-    :type default_plugins: dict
-    :param default_plugins: Example format:
-        {
-            'HexHighEntropyString': {
-                'hex_limit': [3],
-            },
-        }
-
-    :returns: combined plugins, in default_plugins style.
-    """
-    combined_plugins = copy.deepcopy(default_plugins)
-    for plugin_name in plugins:
-        if (plugins[plugin_name] is False or plugins[plugin_name] is None) and \
-                plugin_name in default_plugins:
-            del combined_plugins[plugin_name]
-            continue
-
-        key = list(default_plugins[plugin_name].keys())[0]
-        combined_plugins[plugin_name][key] = [plugins[plugin_name]]
-
-    return combined_plugins
