@@ -196,6 +196,8 @@ class OutputOptions(object):
         if args.output_hook:
             args.output_hook, args.output_hook_command = \
                 self._initialize_output_hook_and_raw_command(args)
+
+            # This is not needed anymore
             delattr(args, 'output_config')
 
         return args
