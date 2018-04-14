@@ -228,6 +228,7 @@ class InitializeOptions(object):
             if 'exclude_regex' in data and not args.exclude_regex:
                 args.exclude_regex = [data['exclude_regex']]
 
+        # This isn't needed anymore
         delattr(args, 'config_file')
 
         if not args.base_temp_dir:

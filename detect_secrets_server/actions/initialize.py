@@ -1,6 +1,6 @@
 from detect_secrets_server.plugins import PluginsConfigParser
-from detect_secrets_server.repos import tracked_repo_factory
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
+from detect_secrets_server.repos.factory import tracked_repo_factory
 
 
 def initialize(args):

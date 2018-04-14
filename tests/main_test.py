@@ -5,94 +5,16 @@ import json
 import unittest
 
 import mock
-from detect_secrets.core.secrets_collection import SecretsCollection
-from detect_secrets.plugins import SensitivityValues
 
 from detect_secrets_server.__main__ import main
 from detect_secrets_server.__main__ import parse_args
 from detect_secrets_server.__main__ import parse_s3_config
-from detect_secrets_server.__main__ import parse_sensitivity_values
-from detect_secrets_server.repos.repo_config import RepoConfig
 from detect_secrets_server.repos.s3_tracked_repo import S3Config
 from tests.util.mock_util import mock_subprocess
 from tests.util.mock_util import SubprocessMock
 
 
 class ServerTest(unittest.TestCase):
-
-    @staticmethod
-    def assert_sensitivity_values(actual, **expected_values):
-        assert isinstance(actual, SensitivityValues)
-        for key in actual._fields:
-            if key in expected_values:
-                assert expected_values[key] == getattr(actual, key)
-            else:
-                assert getattr(actual, key) is None
-
-    def _mock_repo_config(self):
-        return RepoConfig(
-            base_tmp_dir='default_base_tmp_dir',
-            baseline='baseline',
-            exclude_regex='',
-        )
-
-    def test_parse_sensitivity_values_usage_defaults(self):
-        mock_args = parse_args([])
-
-        self.assert_sensitivity_values(
-            parse_sensitivity_values(mock_args),
-            base64_limit=4.5,
-            hex_limit=3,
-            private_key_detector=True,
-        )
-
-    @mock.patch('detect_secrets_server.__main__.open_config_file')
-    def test_parse_sensitivity_values_config_file_overrides_default_values(self, mock_data):
-        mock_data.return_value = {
-            'default': {
-                'plugins': {
-                    'HexHighEntropyString': 4,
-                }
-            }
-        }
-
-        mock_args = parse_args(['--config-file', 'will_be_mocked'])
-
-        self.assert_sensitivity_values(
-            parse_sensitivity_values(mock_args),
-            base64_limit=4.5,
-            hex_limit=4,
-            private_key_detector=True,
-        )
-
-    def test_parse_sensitivity_values_cli_overrides_default_values(self):
-        mock_args = parse_args(['--base64-limit', '2'])
-
-        self.assert_sensitivity_values(
-            parse_sensitivity_values(mock_args),
-            base64_limit=2,
-            hex_limit=3,
-            private_key_detector=True,
-        )
-
-    @mock.patch('detect_secrets_server.__main__.open_config_file')
-    def test_parse_sensitivity_values_config_file_overrides_cli(self, mock_data):
-        mock_args = parse_args(
-            ['--base64-limit', '3', '--config-file', 'will_be_mocked'])
-        mock_data.return_value = {
-            'default': {
-                'plugins': {
-                    'Base64HighEntropyString': 2,
-                }
-            }
-        }
-
-        self.assert_sensitivity_values(
-            parse_sensitivity_values(mock_args),
-            base64_limit=2,
-            hex_limit=3,
-            private_key_detector=True,
-        )
 
     def test_parse_s3_config_fail(self):
         # No file supplied
@@ -165,124 +87,6 @@ class ServerTest(unittest.TestCase):
         )
 
         assert mock_s3_obj.upload_file.call_count == 1
-
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo.load_from_file')
-    def test_main_scan_repo_unconfigured_repo(self, mock_load_from_file):
-        mock_load_from_file.return_value = None
-        assert main([
-            '--scan-repo',
-            'will-be-mocked',
-            '--output-hook',
-            'examples/standalone_hook.py'
-        ]) == 1
-
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo.scan')
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo._read_tracked_file')
-    def test_main_scan_repo_scan_failed(self, mock_read_file, mock_scan):
-        mock_read_file.return_value = {
-            'sha': 'does_not_matter',
-            'repo': 'repo_name',
-            'plugins': {
-                'base64_limit': 3,
-            },
-            'cron': '* * * * *',
-            'baseline_file': '.secrets.baseline',
-        }
-
-        mock_scan.return_value = None
-        assert main([
-            '--scan-repo',
-            'will-be-mocked',
-            '--output-hook',
-            'examples/standalone_hook.py',
-        ]) == 1
-
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
-    @mock.patch('detect_secrets_server.__main__.CustomLogObj.getLogger')
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo.scan')
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo._read_tracked_file')
-    def test_main_scan_repo_scan_success_no_results_found(
-            self,
-            mock_file,
-            mock_scan,
-            mock_log,
-            mock_subprocess_obj
-    ):
-        mock_file.return_value = {
-            'sha': 'does_not_matter',
-            'repo': 'repo_name',
-            'plugins': {
-                'base64_limit': 3,
-            },
-            'cron': '* * * * *',
-            'baseline_file': '.secrets.baseline',
-        }
-        mock_scan.return_value = SecretsCollection()
-
-        mock_subprocess_obj.side_effect = mock_subprocess((
-            SubprocessMock(
-                expected_input='git rev-parse HEAD',
-                mocked_output=b'new_sha'
-            ),
-        ))
-
-        m = mock.mock_open()
-        with mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open', m):
-            assert main([
-                '--scan-repo',
-                'will-be-mocked',
-                '--output-hook',
-                'examples/standalone_hook.py',
-            ]) == 0
-
-        mock_log().info.assert_called_with(
-            'SCAN COMPLETE - STATUS: clean for %s',
-            'repo_name',
-        )
-
-        m().write.assert_called_once_with(json.dumps({
-            'sha': 'new_sha',
-            'repo': 'repo_name',
-            'plugins': {
-                'base64_limit': 3,
-                'hex_limit': None,
-                'private_key_detector': False,
-            },
-            'cron': '* * * * *',
-            'baseline_file': '.secrets.baseline',
-        }, indent=2))
-
-    @mock.patch('detect_secrets_server.__main__.CustomLogObj.getLogger')
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo.scan')
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo._read_tracked_file')
-    def test_main_scan_repo_scan_success_secrets_found(self, mock_file, mock_scan, mock_log):
-        mock_file.return_value = {
-            'sha': 'does_not_matter',
-            'repo': 'repo_name',
-            'plugins': {
-                'base64_limit': 3,
-            },
-            'cron': '* * * * *',
-            'baseline_file': '.secrets.baseline',
-        }
-
-        mock_secret_collection = SecretsCollection()
-        mock_secret_collection.data['junk'] = 'data'
-        mock_scan.return_value = mock_secret_collection
-
-        with mock.patch('detect_secrets_server.usage.ExternalHook') as hook, \
-                mock.patch('detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo.update') as update, \
-                mock.patch('detect_secrets.core.secrets_collection.SecretsCollection.json') as secrets_json:
-            assert main([
-                '--scan-repo',
-                'will-be-mocked',
-                '--output-hook',
-                'examples/standalone_hook.py',
-            ]) == 0
-
-            assert update.call_count == 0
-            assert hook().alert.call_count == 1
-            assert secrets_json.call_count == 1
 
     def test_main_no_args(self):
         # Needed for coverage

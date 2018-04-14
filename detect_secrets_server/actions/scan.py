@@ -1,7 +1,7 @@
 from detect_secrets.core.log import CustomLog
 
-from detect_secrets_server.repos import tracked_repo_factory
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
+from detect_secrets_server.repos.factory import tracked_repo_factory
 from detect_secrets_server.repos.s3_tracked_repo import S3Config
 
 
@@ -13,8 +13,6 @@ def scan_repo(args):
     ).load_from_file(
         args.scan_repo[0],
         args.base_temp_dir[0],
-        args.baseline[0],
-        args.exclude_regex[0],
         S3Config(**args.s3_config_file),
     )
 

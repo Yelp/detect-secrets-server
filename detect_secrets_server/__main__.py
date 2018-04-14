@@ -1,32 +1,12 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import codecs
 import sys
 
-import yaml
 from detect_secrets.core.log import CustomLog
 
 from detect_secrets_server import actions
 from detect_secrets_server.usage import ServerParserBuilder
-
-
-CustomLogObj = CustomLog()
-
-
-def open_config_file(config_file):
-    try:
-        with codecs.open(config_file) as f:
-            data = yaml.safe_load(f)
-
-    except IOError:
-        CustomLogObj.getLogger().error(
-            'Unable to open config file: %s', config_file
-        )
-
-        raise
-
-    return data
 
 
 def parse_args(argv):
@@ -47,7 +27,7 @@ def main(argv=None):
 
     args = parse_args(argv)
     if args.verbose:    # pragma: no cover
-        CustomLog.enableDebug(args.verbose)
+        CustomLog().enableDebug(args.verbose)
 
     if args.initialize:
         output = actions.initialize(args)

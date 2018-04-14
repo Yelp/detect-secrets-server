@@ -284,7 +284,7 @@ class TestAddRepo(object):
             ),
         ]
 
-        with mock_git_calls(git_calls):
+        with mock_git_calls(*git_calls):
             args = self.parse_args('--add-repo {}'.format(repo))
             add_repo(args)
 
@@ -303,7 +303,7 @@ class TestAddRepo(object):
             ),
         ]
 
-        with mock_git_calls(git_calls):
+        with mock_git_calls(*git_calls):
             args = self.parse_args(
                 '--add-repo {} --baseline .secrets.baseline --local'.format(
                     repo,

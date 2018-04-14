@@ -60,12 +60,12 @@ class TestScanRepo(object):
         # mock_git_calls is used for repo.update
         with self.setup_env(
             SecretsCollection()
-        ) as args, mock_git_calls((
+        ) as args, mock_git_calls(
             SubprocessMock(
                 expected_input='git rev-parse HEAD',
                 mocked_output='new_sha',
             ),
-        )):
+        ):
             assert scan_repo(args) == 0
 
         mock_logger.info.assert_called_with(
@@ -91,7 +91,7 @@ class TestScanRepo(object):
 
         with self.setup_env(
             secrets,
-        ) as args, mock_git_calls((
+        ) as args, mock_git_calls(
             # First, we get the main branch
             SubprocessMock(
                 expected_input='git rev-parse --abbrev-ref HEAD',
@@ -106,7 +106,7 @@ class TestScanRepo(object):
                 ),
                 mocked_output=self.mock_blame_info(),
             ),
-        )):
+        ):
             secret_hash = list(
                 secrets.data['file_with_secrets'].values()
             )[0].secret_hash

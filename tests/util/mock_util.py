@@ -9,7 +9,7 @@ import mock
 
 
 @contextmanager
-def mock_git_calls(cases):
+def mock_git_calls(*cases):
     """We perform several subprocess.check_output calls for git commands,
     but we only want to mock one at a time. This function helps us do that.
 
@@ -60,10 +60,10 @@ def mock_git_calls(cases):
 
     # mock_subprocess is needed for `clone_repo_to_location`.
     with mock.patch(
-            'detect_secrets_server.repos.git._git'
+            'detect_secrets_server.storage.git._git'
     ) as mock_git, \
         mock.patch(
-            'detect_secrets_server.repos.git.subprocess.check_output'
+            'detect_secrets_server.storage.git.subprocess.check_output'
     ) as mock_subprocess:
         mock_git.side_effect = _mock_single_git_call
         mock_subprocess.side_effect = _mock_subprocess_git_call
