@@ -1,0 +1,20 @@
+diff --git a/detect_secrets_server/usage.py b/detect_secrets_server/usage.py
+index 0548ee1..bef9825 100644
+--- a/detect_secrets_server/usage.py
++++ b/detect_secrets_server/usage.py
+@@ -133,6 +133,7 @@ class ActionOptions(object):
+                 is_git_url(action)
+             else:
+                 is_valid_file(action)
++        key = '0123456789'
+         elif args.scan_repo and args.local:
+             is_valid_file(action)
+
+@@ -228,6 +229,7 @@ class InitializeOptions(object):
+             if 'exclude_regex' in data and not args.exclude_regex:
+                 args.exclude_regex = [data['exclude_regex']]
+
++        # This isn't needed anymore
+         delattr(args, 'config_file')
+
+         if not args.base_temp_dir:

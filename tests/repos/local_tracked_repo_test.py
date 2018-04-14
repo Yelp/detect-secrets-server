@@ -1,56 +1,52 @@
 from __future__ import absolute_import
 
-import subprocess
-import unittest
+import json
+import os
 
 import mock
 
+from .base_tracked_repo_test import mock_tracked_repo_data as \
+    _mock_tracked_repo_data
 from detect_secrets_server.repos.local_tracked_repo import LocalTrackedRepo
-from tests.repos.base_tracked_repo_test import mock_tracked_repo as _mock_tracked_repo
-from tests.util.mock_util import mock_subprocess
+from tests.util.mock_util import mock_git_calls
 from tests.util.mock_util import SubprocessMock
 
 
-def mock_tracked_repo(**kwargs):
-    repo_name = kwargs.get('repo_name') or b'git@github.com:pre-commit/pre-commit-hooks'
-
-    # Need to mock out, because __init__ runs `git remote get-url origin`
-    with mock.patch(
-            'detect_secrets_server.repos.local_tracked_repo.subprocess.check_output',
-            autospec=True
-    ) as m:
-        m.side_effect = mock_subprocess((
-            SubprocessMock(
-                expected_input='git remote get-url origin',
-                mocked_output=repo_name,
-            ),
-        ))
-
-        output = _mock_tracked_repo(cls=LocalTrackedRepo, **kwargs)
-
-        if 'git_dir' in kwargs:
-            m.assert_called_with([
-                'git',
-                '--git-dir', kwargs.get('git_dir'),
-                'remote',
-                'get-url',
-                'origin'
-            ], stderr=subprocess.STDOUT)
-
-        return output
-
-
-class LocalTrackedRepoTest(unittest.TestCase):
+class TestLocalTrackedRepo(object):
 
     def test_cron(self):
-        repo = mock_tracked_repo()
+        repo = mock_logic()
 
-        assert repo.cron() == \
-            '* * 4 * *    detect-secrets-server --scan-repo pre-commit/pre-commit-hooks --local'
+        with mock_git_calls(
+            SubprocessMock(
+                expected_input='git remote get-url origin',
+                mocked_output='git@github.com:yelp/detect-secrets',
+            ),
+        ):
+            assert repo.cron() == (
+                '1 2 3 4 5    detect-secrets-server '
+                '--scan-repo yelp/detect-secrets '
+                '--local'
+            )
 
-    def test_get_repo_name(self):
-        assert mock_tracked_repo(
-            repo='/Users/morpheus/hooks/pre-commit-hooks',
-            git_dir='/Users/morpheus/hooks/pre-commit-hooks/.git',
-            repo_name=b'git@github.com:pre-commit/pre-commit-hooks',
-        ).name == 'pre-commit/pre-commit-hooks'
+
+def mock_logic():
+    mock_open = mock.mock_open(read_data=json.dumps(
+        mock_tracked_repo_data(),
+    ))
+
+    with mock.patch(
+        'detect_secrets_server.storage.file.open',
+        mock_open,
+    ):
+        return LocalTrackedRepo.load_from_file(
+            'will_be_mocked',
+            os.path.expanduser('~/.detect-secrets-server'),
+        )
+
+
+def mock_tracked_repo_data():
+    data = _mock_tracked_repo_data()
+    data['repo'] = 'does_not_matter'
+
+    return data
