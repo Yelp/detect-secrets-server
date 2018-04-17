@@ -90,7 +90,7 @@ def get_diff(directory, last_commit_hash):
         last_commit_hash,
         'HEAD',
         '--',
-        *_filter_filenames_from_diff(directory, last_commit_hash),
+        *_filter_filenames_from_diff(directory, last_commit_hash)
     )
 
 
@@ -146,14 +146,16 @@ def _filter_filenames_from_diff(directory, last_commit_hash):
 
 
 def _git(directory, *args):
-    output = subprocess.check_output([
-        'git',
-        '--git-dir', directory,
+    output = subprocess.check_output(
+        [
+            'git',
+            '--git-dir', directory,
 
-        # Work-tree is required for some git commands, because of bare repos.
-        # However, it doesn't hurt to put it for all of them.
-        '--work-tree', '.',
-        *args,
-    ], stderr=subprocess.STDOUT)
+            # Work-tree is required for some git commands, because of bare repos.
+            # However, it doesn't hurt to put it for all of them.
+            '--work-tree', '.',
+        ] + list(args),
+        stderr=subprocess.STDOUT
+    )
 
     return output.decode('utf-8', 'ignore').strip()

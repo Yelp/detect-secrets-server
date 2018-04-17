@@ -39,6 +39,8 @@ def main(argv=None):
 
     elif args.scan_repo:
         return actions.scan_repo(args)
+    else:
+        print('No action taken!')
 
     return 0
 

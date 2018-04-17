@@ -38,6 +38,8 @@ def mock_logic(mock_tracked_repo_data):
     with mock.patch(
         'detect_secrets_server.storage.file.open',
         mock_open,
+    ), mock.patch(
+        'detect_secrets_server.storage.base.os.makedirs',
     ):
         return LocalTrackedRepo.load_from_file(
             'will_be_mocked',

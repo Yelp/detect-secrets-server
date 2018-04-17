@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 import json
 import os
+import sys
+from contextlib import contextmanager
 
 import mock
 import pytest
@@ -9,6 +11,11 @@ import pytest
 from .base_test import assert_directories_created
 from detect_secrets_server.storage.file import FileStorage
 from detect_secrets_server.storage.file import FileStorageWithLocalGit
+
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 
 class TestFileStorage(object):
@@ -26,10 +33,8 @@ class TestFileStorage(object):
         ]):
             self.logic().setup('git@github.com:yelp/detect-secrets')
 
-    def test_get_success(self):
-        mocked_data = {'key': 'value'}
-        mock_open = mock.mock_open(read_data=json.dumps(mocked_data))
-        with mock.patch('builtins.open', mock_open):
+    def test_get_success(self, mock_open):
+        with mock_open({'key': 'value'}):
             data = self.logic().get('does_not_matter')
 
         assert data == {'key': 'value'}
@@ -38,21 +43,21 @@ class TestFileStorage(object):
         with pytest.raises(FileNotFoundError):
             self.logic().get('file_does_not_exist')
 
-    def test_put_success(self):
-        mock_open = mock.mock_open()
-        with mock.patch('builtins.open', mock_open):
+    def test_put_success(self, mock_open):
+        with mock_open() as m:
             self.logic().put('filename', {
                 'key': 'value',
             })
 
-        mock_open().write.assert_called_with(
-            json.dumps(
-                {
-                    'key': 'value',
-                },
-                indent=2,
+            m().write.assert_called_with(
+                json.dumps(
+                    {
+                        'key': 'value',
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
             )
-        )
 
 
 class TestFileStorageWithLocalGit(object):
@@ -70,13 +75,28 @@ class TestFileStorageWithLocalGit(object):
         ]):
             self.logic().setup('git@github.com:yelp/detect-secrets')
 
-    def test_get_success(self):
-        mock_open = mock.mock_open(read_data='{}')
-        with mock.patch('builtins.open', mock_open):
+    def test_get_success(self, mock_open):
+        with mock_open() as m:
             self.logic().get('mock_filename')
 
-        mock_open.assert_called_with(
-            os.path.expanduser(
-                '~/.detect-secrets-server/tracked/local/mock_filename.json'
-            ),
-        )
+            m.assert_called_with(
+                os.path.expanduser(
+                    '~/.detect-secrets-server/tracked/local/mock_filename.json'
+                ),
+            )
+
+
+@pytest.fixture
+def mock_open():
+    namespace = 'builtins.open' if sys.version_info[0] >= 3 else '__builtin__.open'
+
+    @contextmanager
+    def wrapped(data=None):
+        if not data:
+            data = {}
+
+        mock_open = mock.mock_open(read_data=json.dumps(data))
+        with mock.patch(namespace, mock_open):
+            yield mock_open
+
+    return wrapped

@@ -5,6 +5,11 @@ omit =
     .tox/*
     /tmp*
     setup.py
+    tests/util/*
+
+    # These are solely output plugins, and make it hard to really test
+    # without mocking the world
+    detect_secrets_server/hooks/*
 
 [report]
 exclude_lines =

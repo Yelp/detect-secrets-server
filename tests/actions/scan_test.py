@@ -78,7 +78,7 @@ class TestScanRepo(object):
         )
 
         mock_file_operations.write.assert_called_with(
-            json.dumps(self.mock_tracked_file('new_sha'), indent=2,)
+            json.dumps(self.mock_tracked_file('new_sha'), indent=2, sort_keys=True)
         )
 
     def test_alerts_on_secrets_found(

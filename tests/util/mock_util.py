@@ -56,7 +56,7 @@ def mock_git_calls(*cases):
         return case.mocked_output
 
     def _mock_single_git_call(directory, *args):
-        return _mock_subprocess_git_call(['git', *args])
+        return _mock_subprocess_git_call(['git'] + list(args))
 
     # mock_subprocess is needed for `clone_repo_to_location`.
     with mock.patch(
@@ -104,10 +104,3 @@ class SubprocessMock(namedtuple(
             mocked_output,
             should_throw_exception
         )
-
-
-class PropertyMock(mock.Mock):
-    """Allows the mocking of class functions with the @property decorator"""
-
-    def __get__(self, instance, owner):
-        return self()

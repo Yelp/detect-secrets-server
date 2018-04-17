@@ -39,7 +39,7 @@ class FileStorage(BaseStorage):
         """
         filename = self.get_tracked_file_location(key)
         with open(filename, 'w') as f:
-            f.write(json.dumps(value, indent=2))
+            f.write(json.dumps(value, indent=2, sort_keys=True))
 
     def get_tracked_file_location(self, key):
         return get_filepath_safe(

@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import argparse
 import os
-from collections import ChainMap
 from collections import namedtuple
 from importlib import import_module
 
@@ -11,6 +10,11 @@ from detect_secrets.core.usage import ParserBuilder
 
 from detect_secrets_server.hooks.external import ExternalHook
 from detect_secrets_server.plugins import PluginsConfigParser
+
+try:
+    from collections import ChainMap
+except ImportError:
+    from chainmap import ChainMap
 
 
 class ServerParserBuilder(ParserBuilder):
@@ -527,7 +531,7 @@ class S3Options(object):
         if not config:
             return config_file_args
 
-        config = config_file(config[0])
+        config = config[0]
 
         args_to_nicer_naming_map = {
             's3_credentials_file': 'credentials_filename',

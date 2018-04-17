@@ -197,6 +197,7 @@ class TestInitializeOptions(OptionsTest):
                 '--config-file will_be_mocked',
             )
 
+        print(args)
         assert assertion(args)
 
     def test_config_file_disables_when_appropriate(

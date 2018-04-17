@@ -15,7 +15,7 @@ class S3TrackedRepo(BaseTrackedRepo):
     def initialize_storage(cls, base_directory):
         return cls.STORAGE_CLASS(
             base_directory,
-            **cls.init_vars,
+            **cls.init_vars
         )
 
     def __init__(

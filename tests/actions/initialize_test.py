@@ -193,7 +193,7 @@ class TestInitialize(object):
                     'cron': '* * 4 * *',
                     'baseline_filename': '',
                     'exclude_regex': '',
-                }, indent=2)
+                }, indent=2, sort_keys=True)
             ),
             mock.call(
                 json.dumps({
@@ -207,7 +207,7 @@ class TestInitialize(object):
                     'cron': '* * 2 * *',
                     'baseline_filename': '.secrets.baseline',
                     'exclude_regex': 'tests/*',
-                }, indent=2),
+                }, indent=2, sort_keys=True),
             ),
         ])
 
@@ -261,7 +261,7 @@ class TestAddRepo(object):
                 'cron': '',
                 'baseline_filename': '',
                 'exclude_regex': '',
-            }, indent=2),
+            }, indent=2, sort_keys=True),
         )
 
     def test_never_override_meta_tracking_if_already_exists(
@@ -340,7 +340,7 @@ class TestAddRepo(object):
                 'cron': '',
                 'baseline_filename': '.secrets.baseline',
                 'exclude_regex': '',
-            }, indent=2)
+            }, indent=2, sort_keys=True)
         )
 
     def test_add_s3_backend_repo(self, mock_file_operations):

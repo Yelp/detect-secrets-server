@@ -3,6 +3,11 @@ from detect_secrets.core.log import CustomLog
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.factory import tracked_repo_factory
 
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
 
 def scan_repo(args):
     """Returns 0 on success"""

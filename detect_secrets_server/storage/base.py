@@ -6,6 +6,11 @@ from detect_secrets.core.log import CustomLog
 
 from . import git
 
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
 
 class BaseStorage(object):
     """The base class handles git interactions with the local copy
@@ -72,7 +77,7 @@ class BaseStorage(object):
 
             raise
 
-    def _construct_debugging_output(self, sha):
+    def _construct_debugging_output(self, sha):  # pragma: no cover
         alert = {
             'alert': 'Hash not found during git diff',
             'hash': sha,

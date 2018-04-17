@@ -13,7 +13,7 @@ import sys
 def main():
     print('repo:', sys.argv[1])
     print(sys.argv[2])
-    print(json.dumps(json.loads(sys.argv[2]), indent=2))
+    print(json.dumps(json.loads(sys.argv[2]), indent=2, sort_keys=True))
 
 
 if __name__ == '__main__':
