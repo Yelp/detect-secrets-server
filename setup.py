@@ -18,6 +18,7 @@ setup(
     keywords=['secret-management', 'pre-commit', 'security', 'entropy-checks'],
     install_requires=[
         'boto3',
+        'chainmap',
         'detect-secrets',
         'enum34',
         'future',

@@ -9,9 +9,9 @@ def mock_file_operations():
     """
     mock_open = mock.mock_open()
     with mock.patch(
-        'detect_secrets_server.repos.BaseTrackedRepo._initialize_tmp_dir',
+        'detect_secrets_server.storage.base.os.makedirs',
     ), mock.patch(
-        'detect_secrets_server.repos.base_tracked_repo.codecs.open',
+        'detect_secrets_server.storage.file.open',
         mock_open,
     ):
         yield mock_open()

@@ -70,6 +70,12 @@ def mock_git_calls(*cases):
 
         yield
 
+    if current_case['index'] != len(cases):
+        raise AssertionError(
+            '\nExpected: "{}"\n'
+            'Actual: ""'.format(cases[current_case['index']].expected_input)
+        )
+
 
 class SubprocessMock(namedtuple(
     'SubprocessMock',

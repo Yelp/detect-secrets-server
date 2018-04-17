@@ -16,9 +16,9 @@ from tests.util.mock_util import SubprocessMock
 
 class TestLoadFromFile(object):
 
-    def test_success(self):
+    def test_success(self, mock_logic, mock_tracked_repo_data):
         mock_open = mock.mock_open(read_data=json.dumps(
-            mock_tracked_repo_data(),
+            mock_tracked_repo_data,
         ))
 
         repo = mock_logic(mock_open)
@@ -53,7 +53,7 @@ class TestLoadFromFile(object):
 
 class TestCron(object):
 
-    def test_success(self):
+    def test_success(self, mock_logic):
         repo = mock_logic()
         assert repo.cron() == (
             '1 2 3 4 5    detect-secrets-server '
@@ -63,14 +63,14 @@ class TestCron(object):
 
 class TestScan(object):
 
-    def test_no_baseline(self):
+    def test_no_baseline(self, mock_logic):
         repo = mock_logic()
         with mock_git_calls(*self.git_calls()):
             secrets = repo.scan()
 
         assert len(secrets.data['detect_secrets_server/usage.py']) == 1
 
-    def test_unable_to_find_baseline(self):
+    def test_unable_to_find_baseline(self, mock_logic):
         calls = self.git_calls()
         calls[-1] = SubprocessMock(
             expected_input='git show HEAD:foobar',
@@ -84,7 +84,7 @@ class TestScan(object):
 
         assert len(secrets.data['detect_secrets_server/usage.py']) == 1
 
-    def test_scan_with_baseline(self):
+    def test_scan_with_baseline(self, mock_logic):
         baseline = json.dumps({
             'results': {
                 'detect_secrets_server/usage.py': [
@@ -110,7 +110,7 @@ class TestScan(object):
 
         assert len(secrets.data) == 0
 
-    def test_scan_nonexistent_last_saved_hash(self):
+    def test_scan_nonexistent_last_saved_hash(self, mock_logic):
         calls = self.git_calls()
         calls[-2] = SubprocessMock(
             expected_input='git diff sha256-hash HEAD -- detect_secrets_server/usage.py',
@@ -173,7 +173,7 @@ class TestScan(object):
 
 class TestUpdate(object):
 
-    def test_success(self):
+    def test_success(self, mock_logic):
         repo = mock_logic()
 
         with mock_git_calls(
@@ -204,11 +204,18 @@ class TestSave(object):
             (OverrideLevel.ASK_USER, True, 'y',),
         ],
     )
-    def test_save_on_conditions(self, override_level, is_file, mocked_input):
-        with self.setup_env(is_file, mocked_input) as (repo, mock_open):
+    def test_save_on_conditions(
+            self,
+            override_level,
+            is_file,
+            mocked_input,
+            mock_logic,
+            mock_tracked_repo_data
+    ):
+        with self.setup_env(mock_logic, is_file, mocked_input) as (repo, mock_open):
             assert repo.save(override_level)
 
-            self.assert_writes_accurately(mock_open)
+            self.assert_writes_accurately(mock_open, mock_tracked_repo_data)
 
     @pytest.mark.parametrize(
         'override_level,is_file,mocked_input',
@@ -217,13 +224,19 @@ class TestSave(object):
             (OverrideLevel.ASK_USER, True, 'n',),
         ],
     )
-    def test_does_not_save_on_conditions(self, override_level, is_file, mocked_input):
-        with self.setup_env(is_file, mocked_input) as (repo, mock_open):
+    def test_does_not_save_on_conditions(
+            self,
+            mock_logic,
+            override_level,
+            is_file,
+            mocked_input
+    ):
+        with self.setup_env(mock_logic, is_file, mocked_input) as (repo, mock_open):
             assert not repo.save(override_level)
             assert not mock_open().write.called
 
     @contextmanager
-    def setup_env(self, is_file, mocked_input):
+    def setup_env(self, mock_logic, is_file, mocked_input):
         repo = mock_logic()
         mock_open = mock.mock_open()
 
@@ -239,7 +252,7 @@ class TestSave(object):
         ):
             yield repo, mock_open
 
-    def assert_writes_accurately(self, mock_open):
+    def assert_writes_accurately(self, mock_open, mock_tracked_repo_data):
         mock_open.assert_called_with(
             os.path.expanduser(
                 '~/.detect-secrets-server/tracked/{}.json'.format(
@@ -248,7 +261,7 @@ class TestSave(object):
             ),
             'w',
         )
-        mocked_data = mock_tracked_repo_data()
+        mocked_data = mock_tracked_repo_data
         mocked_data['plugins'].update({
             'Base64HighEntropyString': False,
             'PrivateKeyDetector': False,
@@ -261,35 +274,26 @@ class TestSave(object):
         )
 
 
-def mock_logic(mock_open=None):
-    """
-    :type mock_open: mock.mock_open
-    :param mock_open: allows for customized mock_open,
-        so can do assertions outside this function.
-    """
-    if not mock_open:
-        mock_open = mock.mock_open(read_data=json.dumps(
-            mock_tracked_repo_data(),
-        ))
+@pytest.fixture
+def mock_logic(mock_tracked_repo_data):
+    def wrapped(mock_open=None):
+        """
+        :type mock_open: mock.mock_open
+        :param mock_open: allows for customized mock_open,
+            so can do assertions outside this function.
+        """
+        if not mock_open:
+            mock_open = mock.mock_open(read_data=json.dumps(
+                mock_tracked_repo_data,
+            ))
 
-    with mock.patch(
-        'detect_secrets_server.storage.file.open',
-        mock_open
-    ):
-        return BaseTrackedRepo.load_from_file(
-            'will_be_mocked',
-            os.path.expanduser('~/.detect-secrets-server'),
-        )
+        with mock.patch(
+            'detect_secrets_server.storage.file.open',
+            mock_open
+        ):
+            return BaseTrackedRepo.load_from_file(
+                'will_be_mocked',
+                os.path.expanduser('~/.detect-secrets-server'),
+            )
 
-
-def mock_tracked_repo_data():
-    return {
-        'repo': 'git@github.com:yelp/detect-secrets',
-        'sha': 'sha256-hash',
-        'cron': '1 2 3 4 5',
-        'plugins': {
-            'HexHighEntropyString': 2.5,
-        },
-        'baseline_filename': 'foobar',
-        'exclude_regex': '',
-    }
+    return wrapped

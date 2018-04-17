@@ -13,8 +13,13 @@ from detect_secrets_server.usage import ServerParserBuilder
 class OptionsTest(object):
 
     @staticmethod
-    def parse_args(argument_string=''):
-        return ServerParserBuilder().parse_args(argument_string.split())
+    def parse_args(argument_string='', enable_s3_backend=False):
+        with mock.patch.object(
+            ServerParserBuilder,
+            '_enable_s3_backend',
+            return_value=enable_s3_backend,
+        ):
+            return ServerParserBuilder().parse_args(argument_string.split())
 
 
 @pytest.fixture
@@ -22,7 +27,7 @@ def mock_config_file():
     @contextmanager
     def wrapped(config_dict):
         with mock.patch(
-                'detect_secrets_server.usage.is_config_file',
+                'detect_secrets_server.usage.config_file',
                 return_value=config_dict,
         ):
             yield
@@ -296,3 +301,48 @@ class TestOutputOptions(OptionsTest):
 
         args = self.parse_args('{} --output-hook setup.py'.format(action_flag))
         assert args.output_hook_command == '--output-hook setup.py'
+
+
+class TestS3Options(OptionsTest):
+
+    @staticmethod
+    def parse_args(argument_string):
+        return OptionsTest.parse_args(
+            argument_string,
+            enable_s3_backend=True,
+        )
+
+    @pytest.mark.parametrize(
+        'argument_string',
+        [
+            '--s3-credentials-file examples/aws_credentials.json',
+            '--s3-bucket pail',
+        ],
+    )
+    def test_required_args(self, argument_string):
+        with pytest.raises(SystemExit):
+            self.parse_args(argument_string)
+
+    def test_precedence(self, mock_config_file):
+        with mock_config_file({
+            'credentials_filename': 'examples/aws_credentials.json',
+            'bucket_name': 'should_be_replaced_by_cli',
+        }):
+            args = self.parse_args(
+                '--s3-bucket pail --s3-config-file will_be_mocked'
+            )
+
+        assert args.s3_config == {
+            # This takes it from the config file
+            's3_credentials_file': 'examples/aws_credentials.json',
+
+            # Command line arguments override this
+            's3_bucket': 'pail',
+
+            # Default values
+            's3_prefix': '',
+        }
+        assert len(list(filter(
+            lambda x: x.startswith('s3_'),
+            dir(args),
+        )))

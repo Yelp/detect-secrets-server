@@ -24,6 +24,10 @@ class BaseTrackedRepo(object):
     # This should be overriden in subclasses.
     STORAGE_CLASS = FileStorage
 
+    @classmethod
+    def initialize_storage(cls, base_directory):
+        return cls.STORAGE_CLASS(base_directory)
+
     def __init__(
             self,
             repo,
@@ -70,7 +74,7 @@ class BaseTrackedRepo(object):
         self.exclude_regex = exclude_regex
 
         if base_temp_dir:
-            self.storage = self.STORAGE_CLASS(base_temp_dir).setup(repo)
+            self.storage = self.initialize_storage(base_temp_dir).setup(repo)
 
     @classmethod
     def load_from_file(
@@ -89,8 +93,9 @@ class BaseTrackedRepo(object):
         :param repo_name: git URL or local path of repo
 
         :rtype: TrackedRepo
+        :raises: FileNotFoundError
         """
-        storage = cls.STORAGE_CLASS(base_directory)
+        storage = cls.initialize_storage(base_directory)
 
         data = storage.get(storage.hash_filename(repo_name))
         data = cls.modify_tracked_file_contents(data)
@@ -100,11 +105,15 @@ class BaseTrackedRepo(object):
 
         return output
 
+    @property
+    def name(self):
+        return self.storage.repository_name
+
     def cron(self):
         """Returns the cron command to be appended to crontab"""
         return '%(crontab)s    detect-secrets-server --scan-repo %(name)s' % {
             'crontab': self.crontab,
-            'name': self.storage.repository_name,
+            'name': self.name,
         }
 
     def scan(self):
@@ -128,7 +137,7 @@ class BaseTrackedRepo(object):
             diff,
             baseline_filename=self.baseline_filename,
             last_commit_hash=self.last_commit_hash,
-            repo_name=self.storage.repository_name,
+            repo_name=self.name,
         )
 
         baseline = self.storage.get_baseline_file(self.baseline_filename)
@@ -147,7 +156,10 @@ class BaseTrackedRepo(object):
         :type override_level: OverrideLevel
         :param override_level: determines if we overwrite the JSON file, if exists.
         """
-        if os.path.isfile(self.storage.get_tracked_file_location):
+        name = self.name
+        if os.path.isfile(self.storage.get_tracked_file_location(
+            self.storage.hash_filename(name),
+        )):
             if override_level == OverrideLevel.NEVER:
                 return False
 
@@ -156,7 +168,7 @@ class BaseTrackedRepo(object):
                     return False
 
         self.storage.put(
-            self.storage.hash_filename(self.storage.repository_name),
+            self.storage.hash_filename(name),
             self.__dict__,
         )
 
@@ -202,7 +214,7 @@ class BaseTrackedRepo(object):
         while override not in ['y', 'n']:
             override = str(input(
                 '"%s" repo already tracked! Do you want to override this (y|n)? ' %
-                self.storage.repository_name,
+                self.name,
             )).lower()
 
         sys.stdout = sys.__stdout__

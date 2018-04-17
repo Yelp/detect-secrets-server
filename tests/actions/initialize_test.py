@@ -9,7 +9,7 @@ import pytest
 
 from detect_secrets_server.actions import add_repo
 from detect_secrets_server.actions import initialize
-from detect_secrets_server.repos.base_tracked_repo import BaseTrackedRepo
+from detect_secrets_server.storage.base import BaseStorage
 from detect_secrets_server.usage import ServerParserBuilder
 from tests.util.mock_util import mock_git_calls
 from tests.util.mock_util import SubprocessMock
@@ -24,9 +24,14 @@ class TestInitialize(object):
             '--output-hook examples/standalone_hook.py '
         )
 
-        return ServerParserBuilder().parse_args(
-            (base_argument + argument_string).split()
-        )
+        with mock.patch.object(
+            ServerParserBuilder,
+            '_enable_s3_backend',
+            return_value=False,
+        ):
+            return ServerParserBuilder().parse_args(
+                (base_argument + argument_string).split()
+            )
 
     def test_no_tracked_repos(self):
         with mock_repos_config({}):
@@ -159,6 +164,7 @@ class TestInitialize(object):
                     'plugins': {
                         'HexHighEntropyString': 2,
                     },
+                    'exclude_regex': 'tests/*',
                 }),
             ]
         }):
@@ -185,7 +191,8 @@ class TestInitialize(object):
                         'PrivateKeyDetector': True,
                     },
                     'cron': '* * 4 * *',
-                    'baseline_file': '',
+                    'baseline_filename': '',
+                    'exclude_regex': '',
                 }, indent=2)
             ),
             mock.call(
@@ -198,7 +205,8 @@ class TestInitialize(object):
                         'PrivateKeyDetector': True,
                     },
                     'cron': '* * 2 * *',
-                    'baseline_file': '.secrets.baseline',
+                    'baseline_filename': '.secrets.baseline',
+                    'exclude_regex': 'tests/*',
                 }, indent=2),
             ),
         ])
@@ -222,17 +230,22 @@ class TestInitialize(object):
 class TestAddRepo(object):
 
     @staticmethod
-    def parse_args(argument_string=''):
+    def parse_args(argument_string='', is_s3=False):
         default_arguments = (
             '--base-temp-dir /tmp/.detect-secrets-server'
         )
 
-        return ServerParserBuilder().parse_args(
-            '{} {}'.format(
-                default_arguments,
-                argument_string
-            ).split()
-        )
+        with mock.patch.object(
+            ServerParserBuilder,
+            '_enable_s3_backend',
+            return_value=is_s3,
+        ):
+            return ServerParserBuilder().parse_args(
+                '{} {}'.format(
+                    default_arguments,
+                    argument_string
+                ).split()
+            )
 
     def test_add_non_local_repo(self, mock_file_operations):
         self.add_non_local_repo()
@@ -246,7 +259,8 @@ class TestAddRepo(object):
                     'PrivateKeyDetector': True,
                 },
                 'cron': '',
-                'baseline_file': '',
+                'baseline_filename': '',
+                'exclude_regex': '',
             }, indent=2),
         )
 
@@ -254,9 +268,8 @@ class TestAddRepo(object):
             self,
             mock_file_operations
     ):
-        with mock.patch.object(
-            BaseTrackedRepo,
-            '_get_tracked_file_location',
+        with mock.patch(
+            'detect_secrets_server.storage.file.FileStorage.get_tracked_file_location',
 
             # This doesn't matter what it is, just that it exists.
             return_value='examples/config.yaml',
@@ -268,7 +281,7 @@ class TestAddRepo(object):
     def add_non_local_repo(self):
         repo = 'git@github.com:yelp/detect-secrets'
         directory = '/tmp/.detect-secrets-server/repos/{}'.format(
-            BaseTrackedRepo.hash_filename('yelp/detect-secrets')
+            BaseStorage.hash_filename('yelp/detect-secrets')
         )
 
         git_calls = [
@@ -293,13 +306,16 @@ class TestAddRepo(object):
         repo = 'examples'
 
         git_calls = [
-            SubprocessMock(
-                expected_input='git remote get-url origin',
-                mocked_output='git@github.com:yelp/detect-secrets',
-            ),
+            # repo.update
             SubprocessMock(
                 expected_input='git rev-parse HEAD',
                 mocked_output='mocked_sha',
+            ),
+
+            # repo.save (to get self.name)
+            SubprocessMock(
+                expected_input='git remote get-url origin',
+                mocked_output='git@github.com:yelp/detect-secrets',
             ),
         ]
 
@@ -322,13 +338,49 @@ class TestAddRepo(object):
                     'PrivateKeyDetector': True,
                 },
                 'cron': '',
-                'baseline_file': '.secrets.baseline',
+                'baseline_filename': '.secrets.baseline',
+                'exclude_regex': '',
             }, indent=2)
         )
 
     def test_add_s3_backend_repo(self, mock_file_operations):
-        # TODO
-        pass
+        args = self.parse_args(
+            '--add-repo {} '
+            '--local '
+            '--s3-credentials-file examples/aws_credentials.json '
+            '--s3-bucket pail'.format('examples'),
+            is_s3=True,
+        )
+
+        git_calls = [
+            # repo.update
+            SubprocessMock(
+                expected_input='git rev-parse HEAD',
+                mocked_output='mocked_sha',
+            ),
+
+            # repo.save (to get self.name)
+            SubprocessMock(
+                expected_input='git remote get-url origin',
+                mocked_output='git@github.com:yelp/detect-secrets',
+            ),
+
+            # s3 repo.save
+            SubprocessMock(
+                expected_input='git remote get-url origin',
+                mocked_output='git@github.com:yelp/detect-secrets',
+            ),
+        ]
+
+        with mock_git_calls(
+            *git_calls
+        ), mock.patch(
+            'detect_secrets_server.storage.s3.boto3.client',
+            return_value=mock.Mock(),
+        ) as mock_client:
+            mock_client().list_objects_v2.return_value = {}
+
+            add_repo(args)
 
 
 @contextmanager
@@ -339,7 +391,7 @@ def mock_repos_config(data):
     be OK.
     """
     with mock.patch(
-            'detect_secrets_server.usage.is_config_file',
+            'detect_secrets_server.usage.config_file',
             return_value=data,
     ):
         yield
@@ -351,6 +403,6 @@ def mock_repo_class(classname):
     :type classname: str
     """
     with mock.patch(
-            'detect_secrets_server.repos.{}'.format(classname),
+            'detect_secrets_server.repos.factory.{}'.format(classname),
     ) as repo_class:
         yield repo_class

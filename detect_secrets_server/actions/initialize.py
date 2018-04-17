@@ -35,10 +35,9 @@ def add_repo(args):
     """Sets up an individual repository for tracking."""
     repo_class = tracked_repo_factory(
         args.local,
-        bool(args.s3_config_file),
+        bool(args.s3_config),
     )
 
-    # TODO: Pass in s3_config_file
     repo = repo_class(
         repo=args.add_repo[0],
 
@@ -52,10 +51,14 @@ def add_repo(args):
         base_temp_dir=args.base_temp_dir[0],
         baseline_filename=args.baseline[0],
         exclude_regex=args.exclude_regex[0],
+
+        credentials_filename=args.s3_config.get('s3_credentials_file'),
+        bucket_name=args.s3_config.get('s3_bucket'),
+        prefix=args.s3_config.get('s3_prefix'),
     )
 
     # Clone repo, if needed.
-    repo.clone_and_pull_repo()
+    repo.storage.clone_and_pull_master()
 
     # Make the last_commit_hash of repo point to HEAD
     repo.update()

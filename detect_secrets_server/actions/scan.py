@@ -2,21 +2,22 @@ from detect_secrets.core.log import CustomLog
 
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.factory import tracked_repo_factory
-from detect_secrets_server.repos.s3_tracked_repo import S3Config
 
 
 def scan_repo(args):
     """Returns 0 on success"""
-    repo = tracked_repo_factory(
-        args.local,
-        bool(args.s3_config_file),
-    ).load_from_file(
-        args.scan_repo[0],
-        args.base_temp_dir[0],
-        S3Config(**args.s3_config_file),
-    )
-
-    if not repo:
+    try:
+        repo = tracked_repo_factory(
+            args.local,
+            bool(args.s3_config),
+        ).load_from_file(
+            args.scan_repo[0],
+            args.base_temp_dir[0],
+            args.s3_config.get('s3_credentials_file'),
+            args.s3_config.get('s3_bucket'),
+            args.s3_config.get('s3_prefix'),
+        )
+    except FileNotFoundError:
         return 1
 
     secrets = repo.scan()
@@ -65,7 +66,7 @@ def _set_authors_for_found_secrets(repo, secrets):
     """
     for filename in secrets:
         for potential_secret_dict in secrets[filename]:
-            blame_info = repo.get_blame(
+            blame_info = repo.storage.get_blame(
                 filename,
                 potential_secret_dict['line_number'],
             )

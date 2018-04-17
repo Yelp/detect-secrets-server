@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import argparse
 import os
+from collections import ChainMap
 from collections import namedtuple
 from importlib import import_module
 
@@ -21,7 +22,8 @@ class ServerParserBuilder(ParserBuilder):
         self.initialize_options_parser = InitializeOptions(self.parser)
         self.output_parser = OutputOptions(self.parser)
 
-        self.s3_parser = S3Options(self.parser)
+        if self._enable_s3_backend():
+            self.s3_parser = S3Options(self.parser)
 
         self._add_server_arguments()
 
@@ -36,10 +38,14 @@ class ServerParserBuilder(ParserBuilder):
         try:
             self.action_parser.consolidate_args(output)
             self.output_parser.consolidate_args(output)
+
+            if self._enable_s3_backend():
+                self.s3_parser.consolidate_args(output)
+            else:
+                output.s3_config = {}
+
         except argparse.ArgumentTypeError as e:
             self.parser.error(e)
-
-        self.s3_parser.consolidate_args(output)
 
         return output
 
@@ -48,7 +54,11 @@ class ServerParserBuilder(ParserBuilder):
         self.initialize_options_parser.add_arguments()
         self.output_parser.add_arguments()
 
-        self.s3_parser.add_arguments()
+        if self._enable_s3_backend():
+            self.s3_parser.add_arguments()
+
+    def _enable_s3_backend(self):
+        return True
 
 
 class ActionOptions(object):
@@ -68,7 +78,7 @@ class ActionOptions(object):
         self.parser.add_argument(
             '--initialize',
             nargs='?',
-            type=is_config_file,
+            type=config_file,
             const='repos.yaml',
             help='Initializes tracked repositories based on a supplied repos.yaml.',
             metavar='REPO_CONFIG_FILE',
@@ -183,7 +193,7 @@ class InitializeOptions(object):
 
         self.parser.add_argument(
             '--config-file',
-            type=is_config_file,
+            type=config_file,
             nargs=1,
             help=(
                 'An alternative to specifying all default options through the '
@@ -433,22 +443,111 @@ class S3Options(object):
         self.parser = parser.add_argument_group(
             title='s3 backend options',
             description=(
-                'TODO'
+                'Configure options for using Amazon S3 as a backend.'
             ),
         )
 
     def add_arguments(self):
         self.parser.add_argument(
+            '--s3-credentials-file',
+            nargs=1,
+            type=str,
+            help='Specify keys for storing files on S3.',
+            metavar='FILE',
+        )
+        self.parser.add_argument(
+            '--s3-bucket',
+            nargs=1,
+            type=str,
+            help='Specify which bucket to perform S3 operations on.',
+            metavar='BUCKET_NAME',
+        )
+        self.parser.add_argument(
+            '--s3-prefix',
+            nargs=1,
+            type=str,
+            help='Specify the path prefix within the S3 bucket.',
+            metavar='PREFIX',
+        )
+
+        self.parser.add_argument(
             '--s3-config-file',
             nargs=1,
-            type=is_config_file,
-            help='Specify keys for storing files on Amazon S3.',
+            type=config_file,
+            help='Specify S3 configuration options through a config file instead.',
             metavar='S3_CONFIG_FILE',
         )
 
     @staticmethod
     def consolidate_args(args):
-        pass
+        """Command line arguments take precedence over arguments in file."""
+        config = args.s3_config_file
+        delattr(args, 's3_config_file')
+
+        s3_config = dict(ChainMap(
+            S3Options._convert_s3_command_line_args_to_dict(args),
+            S3Options._convert_s3_config_file_to_dict(args, config),
+            {
+                's3_prefix': '',
+            },
+        ))
+
+        for key in S3Options._get_related_keys(args):
+            delattr(args, key)
+
+        missing_keys = [
+            key
+            for key in ['s3_credentials_file', 's3_bucket']
+            if key not in s3_config
+        ]
+
+        if missing_keys:
+            raise argparse.ArgumentTypeError(
+                'the following arguments are required: {}'.format(
+                    ', '.join(map(
+                        lambda x: '--' + x.replace('_', '-'),
+                        missing_keys,
+                    ))
+                )
+            )
+
+        args.s3_config = s3_config
+
+    @staticmethod
+    def _convert_s3_command_line_args_to_dict(args):
+        return {
+            key: getattr(args, key)[0]
+            for key in S3Options._get_related_keys(args)
+            if getattr(args, key)
+        }
+
+    @staticmethod
+    def _convert_s3_config_file_to_dict(args, config):
+        config_file_args = {}
+        if not config:
+            return config_file_args
+
+        config = config_file(config[0])
+
+        args_to_nicer_naming_map = {
+            's3_credentials_file': 'credentials_filename',
+            's3_bucket': 'bucket_name',
+            's3_prefix': 'prefix',
+        }
+
+        for key in S3Options._get_related_keys(args):
+            value = config.get(args_to_nicer_naming_map[key])
+            if value:
+                config_file_args[key] = value
+
+        return config_file_args
+
+    @staticmethod
+    def _get_related_keys(args):
+        return filter(
+            lambda x: x.startswith('s3_'),
+            dir(args),
+        )
 
 
 def is_valid_file(path, error_msg=None):
@@ -461,7 +560,7 @@ def is_valid_file(path, error_msg=None):
     return path
 
 
-def is_config_file(path):
+def config_file(path):
     """
     Custom type to enforce input is valid filepath, and if valid,
     extract file contents.

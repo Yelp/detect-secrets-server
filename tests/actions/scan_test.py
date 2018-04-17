@@ -25,9 +25,14 @@ class TestScanRepo(object):
             '--output-hook examples/standalone_hook.py '
         )
 
-        return ServerParserBuilder().parse_args(
-            (base_argument + argument_string).split()
-        )
+        with mock.patch.object(
+            ServerParserBuilder,
+            '_enable_s3_backend',
+            return_value=False,
+        ):
+            return ServerParserBuilder().parse_args(
+                (base_argument + argument_string).split()
+            )
 
     @contextmanager
     def setup_env(self, scan_results):
@@ -41,8 +46,7 @@ class TestScanRepo(object):
             return_value=scan_results,
         ), mock.patch(
             # We mock this, so that we can successfully load_from_file
-            'detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo'
-            '._read_tracked_file',
+            'detect_secrets_server.storage.file.FileStorage.get',
             return_value=self.mock_tracked_file('old_sha'),
         ):
             yield args
@@ -140,7 +144,8 @@ class TestScanRepo(object):
                 'PrivateKeyDetector': True,
             },
             'cron': '',
-            'baseline_file': '',
+            'baseline_filename': '',
+            'exclude_regex': '',
         }
 
     def mock_blame_info(self):

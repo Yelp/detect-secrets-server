@@ -1,153 +1,149 @@
 from __future__ import absolute_import
 
-import hashlib
-import unittest
+import json
+import os
+from contextlib import contextmanager
 
 import mock
-from detect_secrets.plugins import SensitivityValues
+import pytest
 
-from detect_secrets_server.repos.base_tracked_repo import DEFAULT_BASE_TMP_DIR
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
-from detect_secrets_server.repos.repo_config import RepoConfig
-from detect_secrets_server.repos.s3_tracked_repo import S3Config
+from detect_secrets_server.repos.s3_tracked_repo import S3LocalTrackedRepo
 from detect_secrets_server.repos.s3_tracked_repo import S3TrackedRepo
-from tests.repos.base_tracked_repo_test import mock_tracked_repo as _mock_tracked_repo
-from tests.util.mock_util import PropertyMock
+from tests.util.mock_util import mock_git_calls
+from tests.util.mock_util import SubprocessMock
 
 
-def mock_tracked_repo(**kwargs):
-    additional_s3_args = {
-        's3_creds_file': 'credentials.sample.json',
-        'bucket_name': 'bucket',
-        'prefix': 'prefix'
-    }
-    additional_s3_args.update(kwargs)
+class TestS3TrackedRepo(object):
 
-    config = S3Config(
-        s3_creds_file=additional_s3_args['s3_creds_file'],
-        bucket_name=additional_s3_args['bucket_name'],
-        prefix=additional_s3_args['prefix'],
+    def test_load_from_file(self, mock_logic):
+        with mock_logic() as (client, repo):
+            assert repo.credentials_filename == 'examples/aws_credentials.json'
+            assert repo.bucket_name == 'pail'
+            assert repo.prefix == 'prefix'
+
+            filename = '{}.json'.format(
+                repo.storage.hash_filename('mocked_repository_name'),
+            )
+            client.download_file.assert_called_with(
+                'pail',
+                'prefix/{}'.format(filename),
+                os.path.expanduser(
+                    '~/.detect-secrets-server/tracked/{}'.format(filename),
+                )
+            )
+
+    def test_cron(self, mock_logic):
+        with mock_logic() as (client, repo):
+            assert repo.cron() == (
+                '1 2 3 4 5    detect-secrets-server '
+                '--scan-repo yelp/detect-secrets '
+                '--s3-credentials-file examples/aws_credentials.json '
+                '--s3-bucket pail '
+                '--s3-prefix prefix'
+            )
+
+    @pytest.mark.parametrize(
+        'is_file_uploaded,override_level,should_upload',
+        [
+            # If not uploaded, always upload despite OverrideLevel.
+            (False, OverrideLevel.NEVER, True,),
+            (False, OverrideLevel.ASK_USER, True,),
+            (False, OverrideLevel.ALWAYS, True,),
+
+            # Upload if OverrideLevel != NEVER
+            (True, OverrideLevel.ALWAYS, True,),
+            (True, OverrideLevel.NEVER, False,),
+        ]
     )
-
-    with mock.patch.object(S3TrackedRepo, '_download'),\
-            mock.patch.object(S3TrackedRepo, '_initialize_s3_client'):
-        return _mock_tracked_repo(cls=S3TrackedRepo, s3_config=config, **kwargs)
-
-
-class S3TrackedRepoTest(unittest.TestCase):
-
-    def test_load_from_file_success(self):
-        repo_name = 'name'
-        internal_filename = hashlib.sha512(
-            repo_name.encode('utf-8')).hexdigest()
-
-        mock_download = mock.Mock()
-        mock_super = mock.Mock()
-        with mock.patch.object(S3TrackedRepo, '_download', mock_download), \
-                mock.patch.object(S3TrackedRepo, '_load_from_file', mock_super), \
-                mock.patch.object(S3TrackedRepo, '_initialize_s3_client'):
-            S3TrackedRepo.load_from_file(
-                repo_name,
-                RepoConfig(
-                    base_tmp_dir=DEFAULT_BASE_TMP_DIR,
-                    baseline='baseline',
-                    exclude_regex='',
-                ),
-                S3Config(
-                    s3_creds_file='s3_creds_file',
-                    bucket_name='bucket_name',
-                    prefix='prefix_value',
-                ),
+    def test_save(
+            self,
+            mock_logic,
+            is_file_uploaded,
+            override_level,
+            should_upload
+    ):
+        with mock_logic() as (client, repo):
+            filename = 'prefix/{}.json'.format(
+                repo.storage.hash_filename('yelp/detect-secrets')
             )
 
-            mock_download.assert_called_once_with(
-                'bucket_name',
-                'prefix_value',
-                internal_filename,
-                '%s/tracked/%s.json' % (DEFAULT_BASE_TMP_DIR, internal_filename)
+            mock_list_objects_return_value = {}
+            if is_file_uploaded:
+                mock_list_objects_return_value = {
+                    'Contents': [
+                        {
+                            'Key': filename,
+                            'Size': 1,
+                        },
+                    ],
+                }
+
+            client.list_objects_v2.return_value = \
+                mock_list_objects_return_value
+
+            repo.save(override_level)
+
+            client.list_objects_v2.assert_called_with(
+                Bucket='pail',
+                Prefix=filename,
+            )
+            assert client.upload_file.called is should_upload
+
+
+class TestS3LocalTrackedRepo(object):
+
+    def test_cron(self, mock_logic):
+        with mock_logic(is_local=True) as (client, repo),\
+            mock_git_calls(
+                SubprocessMock(
+                    expected_input='git remote get-url origin',
+                    mocked_output='git@github.com:yelp/detect-secrets',
+                ),
+        ):
+            assert repo.cron() == (
+                '1 2 3 4 5    detect-secrets-server '
+                '--scan-repo yelp/detect-secrets '
+                '--local '
+                '--s3-credentials-file examples/aws_credentials.json '
+                '--s3-bucket pail '
+                '--s3-prefix prefix'
             )
 
-    def test_save_file_fail_uploads_if_not_in_s3(self):
-        repo = mock_tracked_repo()
 
-        mock_upload = mock.Mock()
-        mock_save = mock.Mock(return_value=False)
-        mock_exists = mock.Mock(return_value=False)
-        with mock.patch.object(repo, '_upload', mock_upload), \
-                mock.patch.object(repo, '_parent_save', mock_save), \
-                mock.patch.object(repo, '_does_file_exist', mock_exists):
-            repo.save()
+@pytest.fixture
+def mock_logic(mocked_boto, mock_tracked_repo_data):
+    @contextmanager
+    def wrapped(is_local=False):
+        klass = S3LocalTrackedRepo if is_local else S3TrackedRepo
 
-            assert mock_upload.called is True
+        with mock.patch(
+            'detect_secrets_server.storage.file.open',
+            mock.mock_open(read_data=json.dumps(
+                mock_tracked_repo_data,
+            )),
+        ), mock.patch(
+            'detect_secrets_server.storage.file.os.path.isdir',
+            return_value=True,
+        ):
+            yield (
+                mocked_boto,
+                klass.load_from_file(
+                    'mocked_repository_name',
+                    os.path.expanduser('~/.detect-secrets-server'),
+                    'examples/aws_credentials.json',
+                    'pail',
+                    'prefix',
+                )
+            )
 
-    def test_save_file_normal_success(self):
-        repo = mock_tracked_repo()
+    return wrapped
 
-        mock_parent_save = mock.Mock(return_value=True)
-        mock_upload = mock.Mock()
-        with mock.patch.object(repo, '_parent_save', mock_parent_save), \
-                mock.patch.object(repo, '_upload', mock_upload):
-            repo.save()
 
-            assert mock_upload.called is True
-
-    def test_save_file_already_exists_on_s3(self):
-        repo = mock_tracked_repo()
-
-        mock_parent_save = mock.Mock(return_value=True)
-        mock_file_exist = mock.Mock(return_value=True)
-        mock_upload = mock.Mock()
-        with mock.patch.object(repo, '_parent_save', mock_parent_save), \
-                mock.patch.object(repo, '_upload', mock_upload), \
-                mock.patch.object(repo, '_does_file_exist', mock_file_exist):
-
-            # Make sure to override, if file exists.
-            repo.save()
-
-            assert mock_upload.called is True
-
-            # Make sure **not** to override, if override == NEVER
-            mock_upload.called = False
-
-            repo.save(OverrideLevel.NEVER)
-
-            assert mock_upload.called is False
-
-            # Make sure to still upload, if file doesn't exist
-            mock_upload.called = False
-            mock_file_exist.return_value = False
-
-            repo.save(OverrideLevel.NEVER)
-
-            assert mock_upload.called is True
-
-    def test_s3_key(self):
-        for prefix_name in [
-            'prefix',
-            'prefix/',
-        ]:
-            repo = mock_tracked_repo(prefix=prefix_name)
-
-            mock_stub = PropertyMock(return_value='internal_filename')
-            with mock.patch.object(S3TrackedRepo, 'internal_filename', mock_stub):
-                assert repo.s3_key == 'prefix/internal_filename.json'
-
-    def test_modify_tracked_file_contents(self):
-        data = {
-            'plugins': {
-                'HexHighEntropyString': 3,
-            },
-            's3_config': {
-                's3_creds_file': 'filename',
-                'bucket_name': 'bucket',
-                'prefix': 'prefix',
-            },
-        }
-
-        output = S3TrackedRepo._modify_tracked_file_contents(data)
-
-        assert isinstance(output['plugin_sensitivity'], SensitivityValues)
-        assert output['plugin_sensitivity'].hex_limit == 3
-        assert isinstance(output['s3_config'], S3Config)
-        assert output['s3_config'].bucket_name == 'bucket'
-        assert output['s3_config'].prefix == 'prefix'
+@pytest.fixture
+def mocked_boto():
+    with mock.patch(
+        'detect_secrets_server.storage.s3.boto3.client',
+        return_value=mock.Mock(),
+    ) as mock_client:
+        yield mock_client()
