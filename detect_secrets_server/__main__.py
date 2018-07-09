@@ -3,10 +3,10 @@ from __future__ import print_function
 
 import sys
 
-from detect_secrets.core.log import CustomLog
+from detect_secrets.core.log import log
 
 from detect_secrets_server import actions
-from detect_secrets_server.usage import ServerParserBuilder
+from detect_secrets_server.core.usage.parser import ServerParserBuilder
 
 
 def parse_args(argv):
@@ -27,20 +27,20 @@ def main(argv=None):
 
     args = parse_args(argv)
     if args.verbose:    # pragma: no cover
-        CustomLog().enableDebug(args.verbose)
+        log.set_debug_level(args.verbose)
 
-    if args.initialize:
-        output = actions.initialize(args)
-        if output:
-            print(output)
+    print(args)
+    return
+    if args.action == 'add':
+        if isinstance(args.repo, dict):
+            output = actions.initialize(args)
+            if output:
+                print(output)
+        else:
+            actions.add_repo(args)
 
-    elif args.add_repo:
-        actions.add_repo(args)
-
-    elif args.scan_repo:
+    elif args.action == 'scan':
         return actions.scan_repo(args)
-    else:
-        print('No action taken!')
 
     return 0
 

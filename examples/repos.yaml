@@ -4,4 +4,5 @@ tracked:
       sha: ce9232e49873ff11cf3f377d755aa033253328ed
       cron: "* * 4 * *"
       plugins:
-        Base64HighEntropyString: 4
+        Base64HighEntropyString:
+            base64_limit: 4

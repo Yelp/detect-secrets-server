@@ -33,7 +33,7 @@ class TestFileStorage(object):
         ]):
             self.logic().setup('git@github.com:yelp/detect-secrets')
 
-    def test_get_success(self, mock_open):
+    def test_get_success(self):
         with mock_open({'key': 'value'}):
             data = self.logic().get('does_not_matter')
 
@@ -43,7 +43,7 @@ class TestFileStorage(object):
         with pytest.raises(FileNotFoundError):
             self.logic().get('file_does_not_exist')
 
-    def test_put_success(self, mock_open):
+    def test_put_success(self):
         with mock_open() as m:
             self.logic().put('filename', {
                 'key': 'value',
@@ -75,7 +75,7 @@ class TestFileStorageWithLocalGit(object):
         ]):
             self.logic().setup('git@github.com:yelp/detect-secrets')
 
-    def test_get_success(self, mock_open):
+    def test_get_success(self):
         with mock_open() as m:
             self.logic().get('mock_filename')
 
@@ -86,17 +86,13 @@ class TestFileStorageWithLocalGit(object):
             )
 
 
-@pytest.fixture
-def mock_open():
+@contextmanager
+def mock_open(data=None):
+    if not data:
+        data = {}
+
     namespace = 'builtins.open' if sys.version_info[0] >= 3 else '__builtin__.open'
 
-    @contextmanager
-    def wrapped(data=None):
-        if not data:
-            data = {}
-
-        mock_open = mock.mock_open(read_data=json.dumps(data))
-        with mock.patch(namespace, mock_open):
-            yield mock_open
-
-    return wrapped
+    mock_open = mock.mock_open(read_data=json.dumps(data))
+    with mock.patch(namespace, mock_open):
+        yield mock_open

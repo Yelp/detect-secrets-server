@@ -7,8 +7,8 @@ import mock
 import pytest
 
 from detect_secrets_server.repos.local_tracked_repo import LocalTrackedRepo
-from tests.util.mock_util import mock_git_calls
-from tests.util.mock_util import SubprocessMock
+from testing.mocks import mock_git_calls
+from testing.mocks import SubprocessMock
 
 
 class TestLocalTrackedRepo(object):

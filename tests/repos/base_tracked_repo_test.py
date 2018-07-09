@@ -10,8 +10,8 @@ import pytest
 from detect_secrets_server.repos.base_tracked_repo import BaseTrackedRepo
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.storage.file import FileStorage
-from tests.util.mock_util import mock_git_calls
-from tests.util.mock_util import SubprocessMock
+from testing.mocks import mock_git_calls
+from testing.mocks import SubprocessMock
 
 
 class TestLoadFromFile(object):

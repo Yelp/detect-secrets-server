@@ -10,17 +10,15 @@ import pytest
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.s3_tracked_repo import S3LocalTrackedRepo
 from detect_secrets_server.repos.s3_tracked_repo import S3TrackedRepo
-from tests.util.mock_util import mock_git_calls
-from tests.util.mock_util import SubprocessMock
+from testing.mocks import mock_git_calls
+from testing.mocks import SubprocessMock
 
 
 class TestS3TrackedRepo(object):
 
     def test_load_from_file(self, mock_logic):
         with mock_logic() as (client, repo):
-            assert repo.credentials_filename == 'examples/aws_credentials.json'
-            assert repo.bucket_name == 'pail'
-            assert repo.prefix == 'prefix'
+            assert repo.s3_config == mock_s3_config()
 
             filename = '{}.json'.format(
                 repo.storage.hash_filename('mocked_repository_name'),
@@ -111,6 +109,16 @@ class TestS3LocalTrackedRepo(object):
             )
 
 
+def mock_s3_config():
+    return {
+        'prefix': 'prefix',
+        'bucket': 'pail',
+        'creds_filename': 'examples/aws_credentials.json',
+        'access_key': 'access_key',
+        'secret_access_key': 'secret_access_key',
+    }
+
+
 @pytest.fixture
 def mock_logic(mocked_boto, mock_tracked_repo_data):
     @contextmanager
@@ -131,9 +139,7 @@ def mock_logic(mocked_boto, mock_tracked_repo_data):
                 klass.load_from_file(
                     'mocked_repository_name',
                     os.path.expanduser('~/.detect-secrets-server'),
-                    'examples/aws_credentials.json',
-                    'pail',
-                    'prefix',
+                    mock_s3_config(),
                 )
             )
 

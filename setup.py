@@ -1,28 +1,30 @@
 from setuptools import find_packages
 from setuptools import setup
 
+import detect_secrets_server
 
-VERSION = '0.1.0'
 
 setup(
     name='detect_secrets_server',
     packages=find_packages(exclude=(['test*', 'tmp*'])),
-    version=VERSION,
+    version=detect_secrets_server.__version__,
     description='Tool for setting up a detect-secrets server',
     long_description="Check out detect-secrets-server on `GitHub <https://github.com/Yelp/detect-secrets-server>`_!",
     license="Copyright Yelp, Inc. 2018",
     author='Aaron Loo',
     author_email='aaronloo@yelp.com',
     url='https://github.com/Yelp/detect-secrets-server',
-    download_url='https://github.com/Yelp/detect-secrets-server/archive/{}.tar.gz'.format(VERSION),
-    keywords=['secret-management', 'pre-commit', 'security', 'entropy-checks'],
+    download_url='https://github.com/Yelp/detect-secrets-server/archive/{}.tar.gz'.format(detect_secrets_server.__version__),
+    keywords=[
+        'secret-management',
+        'pre-commit',
+        'security',
+        'entropy-checks'
+    ],
     install_requires=[
-        'boto3',
-        'chainmap',
         'detect-secrets',
         'enum34',
         'future',
-        'pysensu_yelp',
         'pyyaml',
         'unidiff',
     ],

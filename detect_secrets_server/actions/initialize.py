@@ -1,6 +1,35 @@
+from __future__ import absolute_import
+
 from detect_secrets_server.plugins import PluginsConfigParser
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.factory import tracked_repo_factory
+
+
+def add_repo(args):
+    """Sets up an individual repository for tracking."""
+    repo_class = tracked_repo_factory(
+        args.local,
+        bool(getattr(args, 's3_config', None)),
+    )
+
+    repo = repo_class(
+        repo=args.repo,
+
+        # Will be updated to HEAD upon first update
+        sha='',
+
+        # TODO: Comment
+        cron='',
+
+        plugins=args.plugins,
+        base_temp_dir=args.root_dir,
+        baseline_filename=args.baseline,
+        exclude_regex=args.exclude_regex,
+
+        s3_config=getattr(args, 's3_config', None),
+    )
+
+    _clone_and_save_repo(repo)
 
 
 def initialize(args):
@@ -10,14 +39,14 @@ def initialize(args):
     Sets up local file storage for tracking repositories.
     """
     tracked_repos = _load_from_config(
-        args.initialize,
+        args.repo,
         args.plugins,
-        args.base_temp_dir[0],
-        args.baseline[0],
-        args.exclude_regex[0],
+        args.root_dir,
+        args.baseline,
+        args.exclude_regex,
     )
 
-    cron_repos = [repo for repo in tracked_repos if repo.save()]
+    cron_repos = [repo for repo in tracked_repos if _clone_and_save_repo(repo)]
     if not cron_repos:
         return
 
@@ -31,48 +60,28 @@ def initialize(args):
     return output
 
 
-def add_repo(args):
-    """Sets up an individual repository for tracking."""
-    repo_class = tracked_repo_factory(
-        args.local,
-        bool(args.s3_config),
-    )
-
-    repo = repo_class(
-        repo=args.add_repo[0],
-
-        # Will be updated to HEAD upon first update
-        sha='',
-
-        # TODO: Comment
-        cron='',
-
-        plugins=args.plugins,
-        base_temp_dir=args.base_temp_dir[0],
-        baseline_filename=args.baseline[0],
-        exclude_regex=args.exclude_regex[0],
-
-        credentials_filename=args.s3_config.get('s3_credentials_file'),
-        bucket_name=args.s3_config.get('s3_bucket'),
-        prefix=args.s3_config.get('s3_prefix'),
-    )
-
+def _clone_and_save_repo(repo):
+    """
+    :type repo: BaseTrackedRepo
+    :param repo: repo to clone (if appropriate) and save
+    """
     # Clone repo, if needed.
     repo.storage.clone_and_pull_master()
 
     # Make the last_commit_hash of repo point to HEAD
-    repo.update()
+    if not repo.last_commit_hash:
+        repo.update()
 
     # Save the last_commit_hash, if we have nothing on file already
-    repo.save(OverrideLevel.NEVER)
+    return repo.save(OverrideLevel.NEVER)
 
 
 def _load_from_config(
-        repos,
-        default_plugins,
-        base_temp_dir,
-        baseline_filename,
-        exclude_regex
+    repos,
+    default_plugins,
+    base_temp_dir,
+    baseline_filename,
+    exclude_regex
 ):
     """For expected config format, see `examples/repos.yaml`.
 
@@ -96,7 +105,7 @@ def _load_from_config(
 
     for entry in repos['tracked']:
         output.append(
-            _initialize_repo(
+            _initialize_repo_from_config_entry(
                 entry,
                 default_plugins,
                 base_temp_dir,
@@ -108,12 +117,12 @@ def _load_from_config(
     return output
 
 
-def _initialize_repo(
-        entry,
-        default_plugins,
-        base_temp_dir,
-        baseline_filename,
-        exclude_regex
+def _initialize_repo_from_config_entry(
+    entry,
+    default_plugins,
+    base_temp_dir,
+    baseline_filename,
+    exclude_regex
 ):
     """
     :type entry: dict

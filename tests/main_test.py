@@ -8,11 +8,11 @@ from detect_secrets_server.__main__ import main
 
 class TestMain(object):
 
-    def test_main_no_args(self):
+    def test_no_args(self):
         with pytest.raises(SystemExit):
             main([])
 
-    def test_main_no_actions(self):
+    def test_no_actions(self):
         argument_string = (
             '--s3-config examples/s3.yaml'
         )

@@ -25,40 +25,40 @@ class S3TrackedRepo(BaseTrackedRepo):
             plugins,
             baseline_filename,
             exclude_regex,
-            credentials_filename,
-            bucket_name,
-            prefix='',
+            s3_config,
             cron='',
             base_temp_dir=None,
             *args,
             **kwargs
     ):
         """
-        :type credentials_filename: str
-        :param credentials_filename: filepath to s3 credentials file.
-            Expected format:
-                >>> {
-                ...    'accessKeyId': '<redacted>',
-                ...    'secretAccessKey': '<redacted>',
-                ... }
+        :type s3_config: dict
+        :param s3_config: initialized in usage.S3Options. Contains the
+            following keys:
 
-        :type bucket_name: str
-        :param bucket_name: the bucket to upload the meta files to
+            prefix: str
+                an optional prefix to append to the start of the path,
+                so it can be placed in the s3 bucket appropriately.
 
-        :type prefix: str
-        :param prefix: an optional prefix to append to the start of the
-            path, so it can be placed in the s3 bucket appropriately.
+            bucket: str
+                the bucket name to upload the meta files to
+
+            creds_filename: str
+                filepath to s3 credentials file. This is needed for cron
+                output.
+
+            access_key: str
+                s3 access key
+
+            secret_access_key: str
+                secret s3 access key
         """
-        self.credentials_filename = credentials_filename
-        self.bucket_name = bucket_name
-        self.prefix = prefix
+        self.s3_config = s3_config
 
         # Store it in the class and the instance, because we need to
         # initialize_storage with the class variables.
         self._store_variables_in_class(
-            credentials_filename=credentials_filename,
-            bucket_name=bucket_name,
-            prefix=prefix,
+            s3_config=s3_config,
         )
 
         super(S3TrackedRepo, self).__init__(
@@ -77,14 +77,12 @@ class S3TrackedRepo(BaseTrackedRepo):
         cls,
         repo_name,
         base_directory,
-        credentials_filename,
-        bucket_name,
-        prefix='',
+        s3_config,
+        *args,
+        **kwargs
     ):
         cls._store_variables_in_class(
-            credentials_filename=credentials_filename,
-            bucket_name=bucket_name,
-            prefix=prefix,
+            s3_config=s3_config,
         )
 
         return super(S3TrackedRepo, cls).load_from_file(
@@ -103,9 +101,9 @@ class S3TrackedRepo(BaseTrackedRepo):
         output = super(S3TrackedRepo, self).cron()
         return '{} --s3-credentials-file {} --s3-bucket {} --s3-prefix {}'.format(
             output,
-            self.credentials_filename,
-            self.bucket_name,
-            self.prefix,
+            self.s3_config['creds_filename'],
+            self.s3_config['bucket'],
+            self.s3_config['prefix'],
         )
 
     def save(self, override_level=OverrideLevel.ASK_USER):

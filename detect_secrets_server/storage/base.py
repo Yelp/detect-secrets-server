@@ -2,9 +2,9 @@ import hashlib
 import os
 import subprocess
 
-from detect_secrets.core.log import CustomLog
+from detect_secrets.core.log import log
 
-from . import git
+from .core import git
 
 try:
     FileNotFoundError
@@ -71,7 +71,7 @@ class BaseStorage(object):
             # secrets.
             #
             # TODO: Fix this to be more robust.
-            CustomLog().getLogger().error(
+            log.error(
                 self._construct_debugging_output(from_sha),
             )
 

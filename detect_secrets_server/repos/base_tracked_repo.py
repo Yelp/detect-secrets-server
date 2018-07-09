@@ -7,7 +7,7 @@ from enum import Enum
 
 from detect_secrets.core.baseline import get_secrets_not_in_baseline
 from detect_secrets.core.secrets_collection import SecretsCollection
-from detect_secrets.plugins import initialize_plugins
+from detect_secrets.plugins.core import initialize
 
 from detect_secrets_server.plugins import PluginsConfigParser
 from detect_secrets_server.storage.file import FileStorage
@@ -48,8 +48,7 @@ class BaseTrackedRepo(object):
 
         :type plugins: dict
         :param plugins: values to configure various plugins, formatted as
-            described in
-            detect_secrets_server.plugins.PluginsConfigParser.to_args
+            described in detect_secrets.core.usage
 
         :type base_temp_dir: str
         :param base_temp_dir: the directory to clone git repositories to.
@@ -124,7 +123,7 @@ class BaseTrackedRepo(object):
         """
         self.storage.clone_and_pull_master()
 
-        default_plugins = initialize_plugins(self.plugin_config)
+        default_plugins = initialize.from_parser_builder(self.plugin_config)
         secrets = SecretsCollection(default_plugins, self.exclude_regex)
 
         try:
@@ -155,6 +154,8 @@ class BaseTrackedRepo(object):
 
         :type override_level: OverrideLevel
         :param override_level: determines if we overwrite the JSON file, if exists.
+        :rtype: bool
+        :returns: True if repository is saved.
         """
         name = self.name
         if os.path.isfile(self.storage.get_tracked_file_location(

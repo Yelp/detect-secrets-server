@@ -1,4 +1,4 @@
-from detect_secrets.core.log import CustomLog
+from detect_secrets.core.log import log
 
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.factory import tracked_repo_factory
@@ -14,13 +14,11 @@ def scan_repo(args):
     try:
         repo = tracked_repo_factory(
             args.local,
-            bool(args.s3_config),
+            bool(getattr(args, 's3_config', None)),
         ).load_from_file(
-            args.scan_repo[0],
-            args.base_temp_dir[0],
-            args.s3_config.get('s3_credentials_file'),
-            args.s3_config.get('s3_bucket'),
-            args.s3_config.get('s3_prefix'),
+            args.repo,
+            args.root_dir,
+            s3_config=getattr(args, 's3_config', None),
         )
     except FileNotFoundError:
         return 1
@@ -45,7 +43,7 @@ def _alert_on_secrets_found(repo, secrets, output_hook):
 
     :type output_hook: detect_secrets_server.hooks.base.BaseHook
     """
-    CustomLog().getLogger().error('Secrets found in %s', repo.name)
+    log.error('Secrets found in %s', repo.name)
 
     _set_authors_for_found_secrets(repo, secrets)
 
@@ -56,7 +54,7 @@ def _update_tracked_repo(repo):
     """Save and update records, since the latest scan indicates that the
     most recent commit is clean.
     """
-    CustomLog().getLogger().info('No secrets found for %s', repo.name)
+    log.info('No secrets found for %s', repo.name)
 
     repo.update()
     repo.save(OverrideLevel.ALWAYS)

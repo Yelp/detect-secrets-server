@@ -11,8 +11,8 @@ from detect_secrets_server.actions import add_repo
 from detect_secrets_server.actions import initialize
 from detect_secrets_server.storage.base import BaseStorage
 from detect_secrets_server.usage import ServerParserBuilder
-from tests.util.mock_util import mock_git_calls
-from tests.util.mock_util import SubprocessMock
+from testing.mocks import mock_git_calls
+from testing.mocks import SubprocessMock
 
 
 class TestInitialize(object):

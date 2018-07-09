@@ -11,9 +11,9 @@ from detect_secrets.core.secrets_collection import SecretsCollection
 from detect_secrets_server.actions import scan_repo
 from detect_secrets_server.hooks.external import ExternalHook
 from detect_secrets_server.usage import ServerParserBuilder
+from testing.mocks import mock_git_calls
+from testing.mocks import SubprocessMock
 from tests.util.factories import secrets_collection_factory
-from tests.util.mock_util import mock_git_calls
-from tests.util.mock_util import SubprocessMock
 
 
 class TestScanRepo(object):

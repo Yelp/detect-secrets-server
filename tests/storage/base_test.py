@@ -10,8 +10,8 @@ import pytest
 from detect_secrets_server.storage.base import BaseStorage
 from detect_secrets_server.storage.base import get_filepath_safe
 from detect_secrets_server.storage.base import LocalGitRepository
-from tests.util.mock_util import mock_git_calls
-from tests.util.mock_util import SubprocessMock
+from testing.mocks import mock_git_calls
+from testing.mocks import SubprocessMock
 
 
 class TestBaseStorage(object):

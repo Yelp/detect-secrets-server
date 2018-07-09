@@ -1,10 +1,12 @@
-import json
 import os
-
-import boto3
 
 from .file import FileStorage
 from .file import FileStorageWithLocalGit
+
+try:
+    import boto3
+except ImportError:
+    pass
 
 
 class S3Storage(FileStorage):
@@ -17,15 +19,14 @@ class S3Storage(FileStorage):
     def __init__(
         self,
         base_directory,
-        credentials_filename,
-        bucket_name,
-        prefix='',
+        s3_config
     ):
         super(S3Storage, self).__init__(base_directory)
 
-        self.credentials_filename = credentials_filename
-        self.bucket_name = bucket_name
-        self.prefix = prefix
+        self.access_key = s3_config['access_key']
+        self.secret_access_key = s3_config['secret_access_key']
+        self.bucket_name = s3_config['bucket']
+        self.prefix = s3_config['prefix']
 
         self._initialize_client()
 
@@ -63,13 +64,10 @@ class S3Storage(FileStorage):
         return False
 
     def _initialize_client(self):
-        with open(self.credentials_filename) as f:
-            credentials = json.load(f)
-
         self.client = boto3.client(
             's3',
-            aws_access_key_id=credentials['accessKeyId'],
-            aws_secret_access_key=credentials['secretAccessKey'],
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_access_key,
         )
 
     def get_s3_tracked_file_location(self, key):
