@@ -5,7 +5,7 @@ import codecs
 import sys
 
 import yaml
-from detect_secrets.core.log import CustomLog
+from detect_secrets.core.log import log
 from detect_secrets.plugins import SensitivityValues
 
 from detect_secrets_server.repos import tracked_repo_factory
@@ -16,16 +16,13 @@ from detect_secrets_server.repos.s3_tracked_repo import S3Config
 from detect_secrets_server.usage import ServerParserBuilder
 
 
-CustomLogObj = CustomLog()
-
-
 def open_config_file(config_file):
     try:
         with codecs.open(config_file) as f:
             data = yaml.safe_load(f)
 
     except IOError:
-        CustomLogObj.getLogger().error(
+        log.error(
             'Unable to open config file: %s', config_file
         )
 
@@ -197,7 +194,7 @@ def initialize_repos_from_repo_yaml(
         entry['repo_config'] = config
 
         if entry.get('s3_backed') and s3_config is None:
-            CustomLogObj.getLogger().error(
+            log.error(
                 (
                     'Unable to load s3 config for %s. Make sure to specify '
                     '--s3-config-file for s3_backed repos!'
@@ -235,7 +232,7 @@ def main(argv=None):
 
     args = parse_args(argv)
     if args.verbose:    # pragma: no cover
-        CustomLog.enableDebug(args.verbose)
+        log.set_debug_level(args.verbose)
 
     plugin_sensitivity = parse_sensitivity_values(args)
     repo_config = parse_repo_config(args)
@@ -277,7 +274,6 @@ def main(argv=None):
         )
 
     elif args.scan_repo:
-        log = CustomLogObj.getLogger()
 
         repo_name = args.scan_repo[0]
         repo = tracked_repo_factory(args.local, bool(s3_config)) \
