@@ -2,7 +2,7 @@
 
 ## About
 
-`detect-secrets-server` is the server-side counterpart to [`detect-secrets`](https://github.com/Yelp/detect-secrets), that can be used to detect secrets retroactively. It currently is only compatible with [version `0.8.8`](https://github.com/Yelp/detect-secrets/blob/master/CHANGELOG.md) of [`detect-secrets`](https://github.com/Yelp/detect-secrets)
+`detect-secrets-server` is the server-side counterpart to [`detect-secrets`](https://github.com/Yelp/detect-secrets), that can be used to detect secrets retroactively. It currently is only compatible with [version `0.8.8`](https://github.com/Yelp/detect-secrets/blob/master/CHANGELOG.md#090) of [`detect-secrets`](https://github.com/Yelp/detect-secrets)
 
 
 ### Server-side Secret Scanning
