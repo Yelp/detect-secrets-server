@@ -7,9 +7,8 @@ from enum import Enum
 
 from detect_secrets.core.baseline import get_secrets_not_in_baseline
 from detect_secrets.core.secrets_collection import SecretsCollection
-from detect_secrets.plugins.core import initialize
+from detect_secrets.plugins.core import initialize as initialize_plugins
 
-from detect_secrets_server.plugins import PluginsConfigParser
 from detect_secrets_server.storage.file import FileStorage
 
 
@@ -29,15 +28,15 @@ class BaseTrackedRepo(object):
         return cls.STORAGE_CLASS(base_directory)
 
     def __init__(
-            self,
-            repo,
-            sha,
-            plugins,
-            baseline_filename,
-            exclude_regex,
-            cron='',
-            base_temp_dir=None,
-            **kwargs
+        self,
+        repo,
+        sha,
+        plugins,
+        baseline_filename,
+        exclude_regex,
+        crontab='',
+        rootdir=None,
+        **kwargs
     ):
         """
         :type repo: string
@@ -50,15 +49,15 @@ class BaseTrackedRepo(object):
         :param plugins: values to configure various plugins, formatted as
             described in detect_secrets.core.usage
 
-        :type base_temp_dir: str
-        :param base_temp_dir: the directory to clone git repositories to.
+        :type rootdir: str
+        :param rootdir: the directory to clone git repositories to.
 
         :type exclude_regex: str
         :param exclude_regex: used for repository scanning; if a filename
             matches this exclude_regex, it is not scanned.
 
-        :type cron: string
-        :param cron: crontab syntax, for periodic scanning.
+        :type crontab: string
+        :param crontab: crontab syntax, for periodic scanning.
 
         :type baseline_filename: str
         :param baseline_filename: each repository may have a different
@@ -67,21 +66,21 @@ class BaseTrackedRepo(object):
         """
         self.last_commit_hash = sha
         self.repo = repo
-        self.crontab = cron
+        self.crontab = crontab
         self.plugin_config = plugins
         self.baseline_filename = baseline_filename
         self.exclude_regex = exclude_regex
 
-        if base_temp_dir:
-            self.storage = self.initialize_storage(base_temp_dir).setup(repo)
+        if rootdir:
+            self.storage = self.initialize_storage(rootdir).setup(repo)
 
     @classmethod
     def load_from_file(
-            cls,
-            repo_name,
-            base_directory,
-            *args,
-            **kwargs
+        cls,
+        repo_name,
+        base_directory,
+        *args,
+        **kwargs
     ):
         """This will load a TrackedRepo to memory, from a given meta tracked
         file. For automated management without a database.
@@ -96,13 +95,16 @@ class BaseTrackedRepo(object):
         """
         storage = cls.initialize_storage(base_directory)
 
-        data = storage.get(storage.hash_filename(repo_name))
-        data = cls.modify_tracked_file_contents(data)
+        data = cls.get_tracked_repo_data(storage, repo_name)
 
         output = cls(**data)
         output.storage = storage.setup(output.repo)
 
         return output
+
+    @classmethod
+    def get_tracked_repo_data(cls, storage, repo_name):
+        return storage.get(storage.hash_filename(repo_name))
 
     @property
     def name(self):
@@ -110,7 +112,7 @@ class BaseTrackedRepo(object):
 
     def cron(self):
         """Returns the cron command to be appended to crontab"""
-        return '%(crontab)s    detect-secrets-server --scan-repo %(name)s' % {
+        return '%(crontab)s    detect-secrets-server scan %(name)s' % {
             'crontab': self.crontab,
             'name': self.name,
         }
@@ -123,7 +125,7 @@ class BaseTrackedRepo(object):
         """
         self.storage.clone_and_pull_master()
 
-        default_plugins = initialize.from_parser_builder(self.plugin_config)
+        default_plugins = initialize_plugins.from_parser_builder(self.plugin_config)
         secrets = SecretsCollection(default_plugins, self.exclude_regex)
 
         try:
@@ -158,9 +160,11 @@ class BaseTrackedRepo(object):
         :returns: True if repository is saved.
         """
         name = self.name
-        if os.path.isfile(self.storage.get_tracked_file_location(
-            self.storage.hash_filename(name),
-        )):
+        if os.path.isfile(
+            self.storage.get_tracked_file_location(
+                self.storage.hash_filename(name),
+            )
+        ):
             if override_level == OverrideLevel.NEVER:
                 return False
 
@@ -175,30 +179,19 @@ class BaseTrackedRepo(object):
 
         return True
 
-    @classmethod
-    def modify_tracked_file_contents(cls, data):
-        """This function allows us to modify values read from the tracked file,
-        before loading it into the class constructor.
-
-        :type data: dict
-        :param data: self.__dict__ layout
-        :rtype: dict
-        """
-        data['plugins'] = PluginsConfigParser.from_config(data['plugins']).to_args()
-
-        return data
-
     @property
     def __dict__(self):
         """This is written to the filesystem, and used in load_from_file.
         Should contain all variables needed to initialize TrackedRepo."""
         output = {
-            'sha': self.last_commit_hash,
             'repo': self.repo,
-            'plugins': PluginsConfigParser.from_args(self.plugin_config).to_config(),
-            'cron': self.crontab,
+            'sha': self.last_commit_hash,
+            'crontab': self.crontab,
+
             'baseline_filename': self.baseline_filename,
             'exclude_regex': self.exclude_regex,
+
+            'plugins': self.plugin_config,
         }
 
         return output
@@ -213,10 +206,13 @@ class BaseTrackedRepo(object):
 
         override = None
         while override not in ['y', 'n']:
-            override = str(input(
-                '"%s" repo already tracked! Do you want to override this (y|n)? ' %
-                self.name,
-            )).lower()
+            override = str(
+                input(
+                    '"{}" repo already tracked! Do you want to override this (y|n)? '.format(
+                        self.name,
+                    )
+                )
+            ).lower()
 
         sys.stdout = sys.__stdout__
 

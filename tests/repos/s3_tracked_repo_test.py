@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import json
-import os
 from contextlib import contextmanager
 
 import mock
@@ -16,7 +15,7 @@ from testing.mocks import SubprocessMock
 
 class TestS3TrackedRepo(object):
 
-    def test_load_from_file(self, mock_logic):
+    def test_load_from_file(self, mock_logic, mock_rootdir):
         with mock_logic() as (client, repo):
             assert repo.s3_config == mock_s3_config()
 
@@ -26,16 +25,17 @@ class TestS3TrackedRepo(object):
             client.download_file.assert_called_with(
                 'pail',
                 'prefix/{}'.format(filename),
-                os.path.expanduser(
-                    '~/.detect-secrets-server/tracked/{}'.format(filename),
-                )
+                '{}/tracked/{}'.format(
+                    mock_rootdir,
+                    filename,
+                ),
             )
 
     def test_cron(self, mock_logic):
         with mock_logic() as (client, repo):
             assert repo.cron() == (
                 '1 2 3 4 5    detect-secrets-server '
-                '--scan-repo yelp/detect-secrets '
+                'scan yelp/detect-secrets '
                 '--s3-credentials-file examples/aws_credentials.json '
                 '--s3-bucket pail '
                 '--s3-prefix prefix'
@@ -92,16 +92,18 @@ class TestS3TrackedRepo(object):
 class TestS3LocalTrackedRepo(object):
 
     def test_cron(self, mock_logic):
-        with mock_logic(is_local=True) as (client, repo),\
-            mock_git_calls(
-                SubprocessMock(
-                    expected_input='git remote get-url origin',
-                    mocked_output='git@github.com:yelp/detect-secrets',
-                ),
+        with mock_logic(is_local=True) as (
+            client,
+            repo
+        ), mock_git_calls(
+            SubprocessMock(
+                expected_input='git remote get-url origin',
+                mocked_output='git@github.com:yelp/detect-secrets',
+            ),
         ):
             assert repo.cron() == (
                 '1 2 3 4 5    detect-secrets-server '
-                '--scan-repo yelp/detect-secrets '
+                'scan yelp/detect-secrets '
                 '--local '
                 '--s3-credentials-file examples/aws_credentials.json '
                 '--s3-bucket pail '
@@ -113,14 +115,14 @@ def mock_s3_config():
     return {
         'prefix': 'prefix',
         'bucket': 'pail',
-        'creds_filename': 'examples/aws_credentials.json',
+        'credentials_filename': 'examples/aws_credentials.json',
         'access_key': 'access_key',
         'secret_access_key': 'secret_access_key',
     }
 
 
 @pytest.fixture
-def mock_logic(mocked_boto, mock_tracked_repo_data):
+def mock_logic(mocked_boto, mock_tracked_repo_data, mock_rootdir):
     @contextmanager
     def wrapped(is_local=False):
         klass = S3LocalTrackedRepo if is_local else S3TrackedRepo
@@ -138,18 +140,9 @@ def mock_logic(mocked_boto, mock_tracked_repo_data):
                 mocked_boto,
                 klass.load_from_file(
                     'mocked_repository_name',
-                    os.path.expanduser('~/.detect-secrets-server'),
+                    mock_rootdir,
                     mock_s3_config(),
                 )
             )
 
     return wrapped
-
-
-@pytest.fixture
-def mocked_boto():
-    with mock.patch(
-        'detect_secrets_server.storage.s3.boto3.client',
-        return_value=mock.Mock(),
-    ) as mock_client:
-        yield mock_client()

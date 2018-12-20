@@ -8,7 +8,12 @@ def potential_secret_factory(type_='type', filename='filename', lineno=1, secret
     """This is only marginally better than creating PotentialSecret objects directly,
     because of default values.
     """
-    return PotentialSecret(type_, filename, lineno, secret)
+    return PotentialSecret(
+        typ=type_,
+        filename=filename,
+        lineno=lineno,
+        secret=secret,
+    )
 
 
 def secrets_collection_factory(secrets=None, plugins=(), exclude_regex=''):  # pragma: no cover

@@ -2,7 +2,7 @@ tracked:
   -   repo: git@github.com:yelp/detect-secrets.git
       is_local_repo: False
       sha: ce9232e49873ff11cf3f377d755aa033253328ed
-      cron: "* * 4 * *"
+      crontab: "* * 4 * *"
       plugins:
         Base64HighEntropyString:
             base64_limit: 4

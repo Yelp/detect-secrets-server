@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import os
 import subprocess
 from contextlib import contextmanager
 
@@ -14,19 +13,24 @@ from testing.mocks import mock_git_calls
 from testing.mocks import SubprocessMock
 
 
+@pytest.fixture
+def base_storage(mock_rootdir):
+    return BaseStorage(mock_rootdir)
+
+
+@pytest.fixture
+def local_storage(mock_rootdir):
+    return LocalGitRepository(mock_rootdir)
+
+
 class TestBaseStorage(object):
 
-    def logic(self):
-        return BaseStorage(
-            os.path.expanduser('~/.detect-secrets-server'),
-        )
-
-    def test_setup_creates_directories(self):
+    def test_setup_creates_directories(self, mock_rootdir, base_storage):
         with assert_directories_created([
-            '~/.detect-secrets-server',
-            '~/.detect-secrets-server/repos',
+            mock_rootdir,
+            mock_rootdir + '/repos'
         ]):
-            self.logic().setup('git@github.com:yelp/detect-secrets')
+            base_storage.setup('git@github.com:yelp/detect-secrets')
 
     @pytest.mark.parametrize(
         'repo,name',
@@ -43,26 +47,27 @@ class TestBaseStorage(object):
             ),
         ],
     )
-    def test_repository_name(self, repo, name):
+    def test_repository_name(self, repo, name, base_storage):
         with assert_directories_created():
-            assert self.logic().setup(repo).repository_name == name
+            assert base_storage.setup(repo).repository_name == name
 
-    def test_baseline_file_does_not_exist(self):
+    def test_baseline_file_does_not_exist(self, base_storage):
         """This also conveniently tests our _git function"""
         with assert_directories_created():
-            repo = self.logic().setup('git@github.com:yelp/detect-secrets')
+            repo = base_storage.setup('git@github.com:yelp/detect-secrets')
 
         with pytest.raises(subprocess.CalledProcessError):
             repo.get_baseline_file('does_not_exist')
 
-    def test_clone_repo_if_exists(self):
+    def test_clone_repo_if_exists(self, base_storage, mock_rootdir):
         with assert_directories_created():
-            repo = self.logic().setup('git@github.com:yelp/detect-secrets')
+            repo = base_storage.setup('git@github.com:yelp/detect-secrets')
 
         with mock_git_calls(
             self.construct_subprocess_mock_git_clone(
                 repo,
                 b'fatal: destination path \'blah\' already exists',
+                mock_rootdir,
             ),
             SubprocessMock(
                 expected_input='git pull',
@@ -70,14 +75,15 @@ class TestBaseStorage(object):
         ):
             repo.clone_and_pull_master()
 
-    def test_clone_repo_something_else_went_wrong(self):
+    def test_clone_repo_something_else_went_wrong(self, mock_rootdir, base_storage):
         with assert_directories_created():
-            repo = self.logic().setup('git@github.com:yelp/detect-secrets')
+            repo = base_storage.setup('git@github.com:yelp/detect-secrets')
 
         with mock_git_calls(
             self.construct_subprocess_mock_git_clone(
                 repo,
                 b'Some other error message, not expected',
+                mock_rootdir,
             )
         ), pytest.raises(
             subprocess.CalledProcessError
@@ -85,14 +91,13 @@ class TestBaseStorage(object):
             repo.clone_and_pull_master()
 
     @staticmethod
-    def construct_subprocess_mock_git_clone(repo, mocked_output):
+    def construct_subprocess_mock_git_clone(repo, mocked_output, mock_rootdir):
         return SubprocessMock(
             expected_input=(
                 'git clone git@github.com:yelp/detect-secrets {} --bare'.format(
-                    os.path.expanduser(
-                        '~/.detect-secrets-server/repos/{}'.format(
-                            repo.hash_filename('yelp/detect-secrets')
-                        )
+                    '{}/repos/{}'.format(
+                        mock_rootdir,
+                        repo.hash_filename('yelp/detect-secrets'),
                     ),
                 )
             ),
@@ -102,11 +107,6 @@ class TestBaseStorage(object):
 
 
 class TestLocalGitRepository(object):
-
-    def logic(self):
-        return LocalGitRepository(
-            os.path.expanduser('~/.detect-secrets-server'),
-        )
 
     @pytest.mark.parametrize(
         'repo,name',
@@ -121,7 +121,7 @@ class TestLocalGitRepository(object):
             ),
         ]
     )
-    def test_name(self, repo, name):
+    def test_name(self, repo, name, local_storage):
         """OK, I admit this is kinda a lame test case, because technically
         everything is mocked out. However, it's needed for coverage, and
         it *does* test things (kinda).
@@ -132,12 +132,12 @@ class TestLocalGitRepository(object):
                 mocked_output='git@github.com:yelp/detect-secrets',
             ),
         ), assert_directories_created():
-            assert self.logic().setup(repo).repository_name == name
+            assert local_storage.setup(repo).repository_name == name
 
-    def test_clone_and_pull_master(self):
+    def test_clone_and_pull_master(self, local_storage):
         # We're asserting that nothing is run in this case.
         with mock_git_calls(), assert_directories_created():
-            self.logic().setup('git@github.com:yelp/detect-secrets')\
+            local_storage.setup('git@github.com:yelp/detect-secrets')\
                 .clone_and_pull_master()
 
 
@@ -174,7 +174,7 @@ def assert_directories_created(directories_created=None):
 
         if directories_created:
             makedirs.assert_has_calls(map(
-                lambda x: mock.call(os.path.expanduser(x)),
+                lambda x: mock.call(x),
                 directories_created,
             ))
         else:

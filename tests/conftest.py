@@ -1,0 +1,35 @@
+import os
+import tempfile
+
+import mock
+import pytest
+
+
+@pytest.fixture
+def mock_rootdir():
+    # We create a temp directory in the current repo, because it will be
+    # platform-independent.
+    tempdir = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            '../tmp'
+        )
+    )
+    if not os.path.isdir(tempdir):
+        os.mkdir(tempdir)
+
+    pathname = tempfile.mkdtemp(dir=tempdir)
+    try:
+        yield pathname
+    finally:
+        os.rmdir(pathname)
+
+
+@pytest.fixture
+def mocked_boto():
+    mock_client = mock.Mock()
+    with mock.patch(
+        'detect_secrets_server.storage.s3.S3Storage._get_boto3',
+        return_value=mock_client,
+    ):
+        yield mock_client.client()

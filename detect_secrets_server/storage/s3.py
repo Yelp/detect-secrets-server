@@ -1,12 +1,10 @@
+from __future__ import absolute_import
+
 import os
 
 from .file import FileStorage
 from .file import FileStorageWithLocalGit
-
-try:
-    import boto3
-except ImportError:
-    pass
+from detect_secrets_server.core.usage.s3 import should_enable_s3_options
 
 
 class S3Storage(FileStorage):
@@ -64,11 +62,23 @@ class S3Storage(FileStorage):
         return False
 
     def _initialize_client(self):
+        boto3 = self._get_boto3()
+        if not boto3:
+            return
+
         self.client = boto3.client(
             's3',
             aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_access_key,
         )
+
+    def _get_boto3(self):
+        """Used for mocking purposes."""
+        if not should_enable_s3_options():
+            return
+
+        import boto3
+        return boto3
 
     def get_s3_tracked_file_location(self, key):
         return os.path.join(self.prefix, key + '.json')

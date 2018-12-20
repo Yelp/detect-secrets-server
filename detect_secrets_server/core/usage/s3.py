@@ -1,3 +1,5 @@
+import argparse
+
 from .common.validators import config_file
 
 
@@ -31,7 +33,6 @@ class S3Options(object):
             '--s3-credentials-file',
             nargs=1,
             type=str,
-            required=True,
             help='Specify keys for storing files on S3.',
             metavar='FILENAME',
         )
@@ -39,7 +40,6 @@ class S3Options(object):
             '--s3-bucket',
             nargs=1,
             type=str,
-            required=True,
             help='Specify which bucket to perform S3 operations on.',
             metavar='BUCKET_NAME',
         )
@@ -51,6 +51,14 @@ class S3Options(object):
             help='Specify the path prefix within the S3 bucket.',
             metavar='PREFIX',
         )
+        self.parser.add_argument(
+            '--s3-config',
+            nargs=1,
+            type=config_file,
+            default=[''],
+            help='Specify config file for all S3 config options.',
+            metavar='CONFIG_FILE',
+        )
 
         return self
 
@@ -59,9 +67,32 @@ class S3Options(object):
         if not should_enable_s3_options():
             return
 
-        bucket_name = args.s3_bucket[0]
-        prefix = args.s3_prefix[0]
-        creds_filename = args.s3_credentials_file[0]
+        args.s3_config = args.s3_config[0]
+        if args.s3_config and any([
+            args.s3_bucket,
+            args.s3_credentials_file,
+            args.s3_prefix[0],
+        ]):
+            raise argparse.ArgumentTypeError(
+                'Can\'t specify --s3-config with other s3 command line arguments.',
+            )
+        elif not args.s3_config and not all([
+            args.s3_credentials_file,
+            args.s3_bucket,
+        ]):
+            raise argparse.ArgumentTypeError(
+                'the following arguments are required: --s3-credentials-file, --s3-bucket',
+            )
+
+        if args.s3_config:
+            bucket_name = args.s3_config['bucket_name']
+            prefix = args.s3_config['prefix']
+            creds_filename = args.s3_config['credentials_filename']
+        else:
+            bucket_name = args.s3_bucket[0]
+            prefix = args.s3_prefix[0]
+            creds_filename = args.s3_credentials_file[0]
+
         creds = config_file(creds_filename)
 
         # We don't need this anymore.

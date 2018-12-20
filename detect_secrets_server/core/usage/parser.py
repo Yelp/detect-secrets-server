@@ -55,7 +55,7 @@ class ServerParserBuilder(ParserBuilder):
             self.parser.error(e)
 
         PluginOptions.consolidate_args(output)
-        if output.config:
+        if getattr(output, 'config', False):
             apply_default_plugin_options_to_repos(output)
 
         return output
@@ -63,7 +63,7 @@ class ServerParserBuilder(ParserBuilder):
 
 def apply_default_plugin_options_to_repos(args):
     """
-    There are three ways to configure plugin options (in order of priority):
+    There are three ways to configure options (in order of priority):
         1. command line
         2. config file
         3. default values
@@ -71,6 +71,15 @@ def apply_default_plugin_options_to_repos(args):
     This applies default values to the config file, if appropriate.
     """
     for tracked_repo in args.repo:
+        if 'plugins' not in tracked_repo:
+            tracked_repo['plugins'] = {}
+
         for key, value in args.plugins.items():
             if key not in tracked_repo['plugins']:
                 tracked_repo['plugins'][key] = value
+
+        if 'baseline' not in tracked_repo:
+            tracked_repo['baseline'] = args.baseline
+
+        if 'exclude_regex' not in tracked_repo:
+            tracked_repo['exclude_regex'] = args.exclude_regex

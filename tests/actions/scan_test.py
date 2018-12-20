@@ -9,11 +9,11 @@ import pytest
 from detect_secrets.core.secrets_collection import SecretsCollection
 
 from detect_secrets_server.actions import scan_repo
+from detect_secrets_server.core.usage.parser import ServerParserBuilder
 from detect_secrets_server.hooks.external import ExternalHook
-from detect_secrets_server.usage import ServerParserBuilder
+from testing.factories import secrets_collection_factory
 from testing.mocks import mock_git_calls
 from testing.mocks import SubprocessMock
-from tests.util.factories import secrets_collection_factory
 
 
 class TestScanRepo(object):
@@ -21,13 +21,12 @@ class TestScanRepo(object):
     @staticmethod
     def parse_args(argument_string=''):
         base_argument = (
-            '--scan-repo will_be_mocked '
+            'scan will_be_mocked '
             '--output-hook examples/standalone_hook.py '
         )
 
-        with mock.patch.object(
-            ServerParserBuilder,
-            '_enable_s3_backend',
+        with mock.patch(
+            'detect_secrets_server.core.usage.s3.should_enable_s3_options',
             return_value=False,
         ):
             return ServerParserBuilder().parse_args(
@@ -57,9 +56,9 @@ class TestScanRepo(object):
         assert scan_repo(args) == 1
 
     def test_updates_tracked_repo_when_no_secrets_are_found(
-            self,
-            mock_file_operations,
-            mock_logger
+        self,
+        mock_file_operations,
+        mock_logger
     ):
         # mock_git_calls is used for repo.update
         with self.setup_env(
@@ -82,15 +81,15 @@ class TestScanRepo(object):
         )
 
     def test_alerts_on_secrets_found(
-            self,
-            mock_file_operations,
-            mock_logger,
+        self,
+        mock_file_operations,
+        mock_logger,
     ):
         secrets = secrets_collection_factory([
             {
                 'filename': 'file_with_secrets',
                 'lineno': 5,
-            }
+            },
         ])
 
         with self.setup_env(
@@ -143,7 +142,7 @@ class TestScanRepo(object):
                 'Base64HighEntropyString': 4.5,
                 'PrivateKeyDetector': True,
             },
-            'cron': '',
+            'crontab': '',
             'baseline_filename': '',
             'exclude_regex': '',
         }
@@ -179,6 +178,6 @@ class TestScanRepo(object):
 @pytest.fixture
 def mock_logger():
     with mock.patch(
-        'detect_secrets_server.actions.scan.CustomLog'
+        'detect_secrets_server.actions.scan.log'
     ) as log:
-        yield log().getLogger()
+        yield log

@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import json
-import os
 from contextlib import contextmanager
 
 import mock
@@ -16,7 +15,7 @@ from testing.mocks import SubprocessMock
 
 class TestLoadFromFile(object):
 
-    def test_success(self, mock_logic, mock_tracked_repo_data):
+    def test_success(self, mock_logic, mock_tracked_repo_data, mock_rootdir):
         mock_open = mock.mock_open(read_data=json.dumps(
             mock_tracked_repo_data,
         ))
@@ -24,11 +23,10 @@ class TestLoadFromFile(object):
         repo = mock_logic(mock_open)
 
         mock_open.assert_called_with(
-            os.path.expanduser(
-                '~/.detect-secrets-server/tracked/{}.json'.format(
-                    FileStorage.hash_filename('will_be_mocked'),
-                )
-            ),
+            '{}/tracked/{}.json'.format(
+                mock_rootdir,
+                FileStorage.hash_filename('will_be_mocked'),
+            )
         )
 
         assert repo.last_commit_hash == 'sha256-hash'
@@ -36,18 +34,18 @@ class TestLoadFromFile(object):
         assert repo.crontab == '1 2 3 4 5'
         assert repo.plugin_config == {
             'HexHighEntropyString': {
-                'hex_limit': [2.5],
+                'hex_limit': 3.5,
             },
         }
         assert repo.baseline_filename == 'foobar'
         assert repo.exclude_regex == ''
         assert isinstance(repo.storage, FileStorage)
 
-    def test_no_file_found(self):
+    def test_no_file_found(self, mock_rootdir):
         with pytest.raises(IOError):
             BaseTrackedRepo.load_from_file(
                 'does_not_exist',
-                os.path.expanduser('~/.detect-secrets-server'),
+                mock_rootdir,
             )
 
 
@@ -57,21 +55,21 @@ class TestCron(object):
         repo = mock_logic()
         assert repo.cron() == (
             '1 2 3 4 5    detect-secrets-server '
-            '--scan-repo yelp/detect-secrets'
+            'scan yelp/detect-secrets'
         )
 
 
 class TestScan(object):
 
-    def test_no_baseline(self, mock_logic):
+    def test_no_baseline(self, mock_logic, mock_rootdir):
         repo = mock_logic()
-        with mock_git_calls(*self.git_calls()):
+        with mock_git_calls(*self.git_calls(mock_rootdir)):
             secrets = repo.scan()
 
-        assert len(secrets.data['detect_secrets_server/usage.py']) == 1
+        assert len(secrets.data['examples/aws_credentials.json']) == 1
 
-    def test_unable_to_find_baseline(self, mock_logic):
-        calls = self.git_calls()
+    def test_unable_to_find_baseline(self, mock_logic, mock_rootdir):
+        calls = self.git_calls(mock_rootdir)
         calls[-1] = SubprocessMock(
             expected_input='git show HEAD:foobar',
             mocked_output=b'fatal: Path \'foobar\' does not exist',
@@ -82,23 +80,29 @@ class TestScan(object):
         with mock_git_calls(*calls):
             secrets = repo.scan()
 
-        assert len(secrets.data['detect_secrets_server/usage.py']) == 1
+        assert len(secrets.data['examples/aws_credentials.json']) == 1
 
-    def test_scan_with_baseline(self, mock_logic):
+    def test_scan_with_baseline(self, mock_logic, mock_rootdir):
         baseline = json.dumps({
             'results': {
-                'detect_secrets_server/usage.py': [
+                'examples/aws_credentials.json': [
                     {
-                        'type': 'High Entropy String',
-                        'hashed_secret': '87acec17cd9dcd20a716cc2cf67417b71c8a7016',
-                        'line_number': 0,       # does not matter
+                        'type': 'Hex High Entropy String',
+                        'hashed_secret': '2353d31737bbbdb10eb97466b8f2dc057ead1432',
+                        'line_number': 3,       # does not matter
                     },
                 ],
             },
-            'exclude_regex': None,
+            'exclude_regex': '',
+            'plugins_used': [
+                {
+                    'hex_limit': 3.5,
+                    'name': 'HexHighEntropyString',
+                },
+            ],
         })
 
-        calls = self.git_calls()
+        calls = self.git_calls(mock_rootdir)
         calls[-1] = SubprocessMock(
             expected_input='git show HEAD:foobar',
             mocked_output=baseline,
@@ -110,10 +114,10 @@ class TestScan(object):
 
         assert len(secrets.data) == 0
 
-    def test_scan_nonexistent_last_saved_hash(self, mock_logic):
-        calls = self.git_calls()
+    def test_scan_nonexistent_last_saved_hash(self, mock_logic, mock_rootdir):
+        calls = self.git_calls(mock_rootdir)
         calls[-2] = SubprocessMock(
-            expected_input='git diff sha256-hash HEAD -- detect_secrets_server/usage.py',
+            expected_input='git diff sha256-hash HEAD -- examples/aws_credentials.json',
             mocked_output=b'fatal: the hash is not in git history',
             should_throw_exception=True,
         )
@@ -127,14 +131,13 @@ class TestScan(object):
 
         assert secrets.data == {}
 
-    def git_calls(self):
+    def git_calls(self, mock_rootdir):
         """We need to do a bunch of mocking, because there's a lot of git
         operations. This function handles all that.
         """
-        tracked_location = os.path.expanduser(
-            '~/.detect-secrets-server/repos/{}'.format(
-                FileStorage.hash_filename('yelp/detect-secrets'),
-            )
+        tracked_location = '{}/repos/{}'.format(
+            mock_rootdir,
+            FileStorage.hash_filename('yelp/detect-secrets'),
         )
 
         with open('test_data/sample.diff') as f:
@@ -156,10 +159,10 @@ class TestScan(object):
             # get diff (filtering out ignored file extensions)
             SubprocessMock(
                 expected_input='git diff sha256-hash HEAD --name-only',
-                mocked_output='detect_secrets_server/usage.py',
+                mocked_output='examples/aws_credentials.json',
             ),
             SubprocessMock(
-                expected_input='git diff sha256-hash HEAD -- detect_secrets_server/usage.py',
+                expected_input='git diff sha256-hash HEAD -- examples/aws_credentials.json',
                 mocked_output=diff_content,
             ),
 
@@ -205,17 +208,18 @@ class TestSave(object):
         ],
     )
     def test_save_on_conditions(
-            self,
-            override_level,
-            is_file,
-            mocked_input,
-            mock_logic,
-            mock_tracked_repo_data
+        self,
+        override_level,
+        is_file,
+        mocked_input,
+        mock_logic,
+        mock_tracked_repo_data,
+        mock_rootdir,
     ):
         with self.setup_env(mock_logic, is_file, mocked_input) as (repo, mock_open):
             assert repo.save(override_level)
 
-            self.assert_writes_accurately(mock_open, mock_tracked_repo_data)
+            self.assert_writes_accurately(mock_open, mock_tracked_repo_data, mock_rootdir)
 
     @pytest.mark.parametrize(
         'override_level,is_file,mocked_input',
@@ -252,20 +256,20 @@ class TestSave(object):
         ):
             yield repo, mock_open
 
-    def assert_writes_accurately(self, mock_open, mock_tracked_repo_data):
+    def assert_writes_accurately(self, mock_open, mock_tracked_repo_data, mock_rootdir):
         mock_open.assert_called_with(
-            os.path.expanduser(
-                '~/.detect-secrets-server/tracked/{}.json'.format(
-                    FileStorage.hash_filename('yelp/detect-secrets'),
-                )
+            '{}/tracked/{}.json'.format(
+                mock_rootdir,
+                FileStorage.hash_filename('yelp/detect-secrets'),
             ),
             'w',
         )
         mocked_data = mock_tracked_repo_data
-        mocked_data['plugins'].update({
-            'Base64HighEntropyString': False,
-            'PrivateKeyDetector': False,
-        })
+        # TODO: Need to support explicitly disabled plugins
+        # mocked_data['plugins'].update({
+        # 'Base64HighEntropyString': False,
+        # 'PrivateKeyDetector': False,
+        # })
         mock_open().write.assert_called_with(
             json.dumps(
                 mocked_data,
@@ -276,7 +280,7 @@ class TestSave(object):
 
 
 @pytest.fixture
-def mock_logic(mock_tracked_repo_data):
+def mock_logic(mock_tracked_repo_data, mock_rootdir):
     def wrapped(mock_open=None):
         """
         :type mock_open: mock.mock_open
@@ -296,7 +300,7 @@ def mock_logic(mock_tracked_repo_data):
         ):
             return BaseTrackedRepo.load_from_file(
                 'will_be_mocked',
-                os.path.expanduser('~/.detect-secrets-server'),
+                mock_rootdir,
             )
 
     return wrapped

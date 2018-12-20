@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import json
-import os
 from contextlib import contextmanager
 
 import mock
@@ -9,8 +8,8 @@ import pytest
 
 from detect_secrets_server.actions import add_repo
 from detect_secrets_server.actions import initialize
+from detect_secrets_server.core.usage.parser import ServerParserBuilder
 from detect_secrets_server.storage.base import BaseStorage
-from detect_secrets_server.usage import ServerParserBuilder
 from testing.mocks import mock_git_calls
 from testing.mocks import SubprocessMock
 
@@ -18,54 +17,61 @@ from testing.mocks import SubprocessMock
 class TestInitialize(object):
 
     @staticmethod
-    def parse_args(argument_string=''):
+    def parse_args(argument_string='', has_s3=False):
         base_argument = (
-            '--initialize will_be_mocked '
+            'add will_be_mocked --config '
             '--output-hook examples/standalone_hook.py '
         )
+        if has_s3:
+            base_argument += '--s3-config examples/s3.yaml'
 
-        with mock.patch.object(
-            ServerParserBuilder,
-            '_enable_s3_backend',
-            return_value=False,
+        with mock.patch(
+            'detect_secrets_server.core.usage.s3.should_enable_s3_options',
+            return_value=has_s3,
         ):
             return ServerParserBuilder().parse_args(
                 (base_argument + argument_string).split()
             )
 
     def test_no_tracked_repos(self):
-        with mock_repos_config({}):
+        with mock_repos_config({
+            'tracked': [],
+        }):
             args = self.parse_args()
 
         assert not initialize(args)
 
-    def test_simple_success(self):
+    def test_simple_success(self, mock_rootdir):
         with mock_repos_config({
             'tracked': [
                 self.mock_config_data()
             ]
-        }):
-            args = self.parse_args()
-
-        with mock_repo_class('BaseTrackedRepo') as repo_class:
+        }), mock_repo_class(
+            'BaseTrackedRepo'
+        ) as repo_class:
+            args = self.parse_args(
+                '--root-dir {}'.format(mock_rootdir)
+            )
             initialize(args)
 
             repo_class.assert_called_with(
                 repo='git@github.com:yelp/detect-secrets',
                 sha='afe6f0bced18a7f7d56975e6d0cdb45b95fbb4b1',
-                cron='* * 4 * *',
+                crontab='* * 4 * *',
                 plugins={
                     'HexHighEntropyString': {
-                        'hex_limit': [3],
+                        'hex_limit': 3,
                     },
                     'Base64HighEntropyString': {
-                        'base64_limit': [4.5],
+                        'base64_limit': 4.5,
                     },
                     'PrivateKeyDetector': {},
+                    'BasicAuthDetector': {},
                 },
-                base_temp_dir=os.path.expanduser('~/.detect-secrets-server'),
-                baseline_filename='',
-                exclude_regex='',
+                rootdir=mock_rootdir,
+                baseline_filename=None,
+                exclude_regex=None,
+                s3_config=None,
             )
 
     @pytest.mark.parametrize(
@@ -98,29 +104,33 @@ class TestInitialize(object):
                 self.mock_config_data(extra_data)
             ]
         }):
-            args = self.parse_args()
+            args = self.parse_args(has_s3=extra_data.get('s3_backend', False))
 
         with mock_repo_class(expected_repo_class) as repo_class:
             initialize(args)
             assert repo_class.called
 
-    def test_repo_config_overrides_defaults(self):
+    def test_repo_config_overrides_defaults(self, mock_rootdir):
         with mock_repos_config({
             'tracked': [
                 self.mock_config_data({
                     'plugins': {
-                        # This checks that it overrides CLI plugin
-                        'HexHighEntropyString': 5,
+                        # This checks that CLI overrides config file
+                        'HexHighEntropyString': {
+                            'hex_limit': 5,
+                        },
 
                         # This checks it overrides default values
-                        'Base64HighEntropyString': 2,
+                        'Base64HighEntropyString': {
+                            'base64_limit': 2,
+                        },
 
                         # This checks for disabling functionality
                         'PrivateKeyDetector': False,
                     },
 
                     # This checks it overrides CLI (non-plugin)
-                    'baseline_file': 'baseline.file',
+                    'baseline_filename': 'will_be_overriden',
 
                     # This checks it overrides default value (non-plugin)
                     'exclude_regex': 'something_here',
@@ -129,7 +139,8 @@ class TestInitialize(object):
         }):
             args = self.parse_args(
                 '--hex-limit 4 '
-                '--baseline will_be_overriden'
+                '--baseline baseline.file '
+                '--root-dir {}'.format(mock_rootdir)
             )
 
         with mock_repo_class('BaseTrackedRepo') as repo_class:
@@ -138,18 +149,21 @@ class TestInitialize(object):
             repo_class.assert_called_with(
                 repo='git@github.com:yelp/detect-secrets',
                 sha='afe6f0bced18a7f7d56975e6d0cdb45b95fbb4b1',
-                cron='* * 4 * *',
+                crontab='* * 4 * *',
                 plugins={
                     'HexHighEntropyString': {
-                        'hex_limit': [5],
+                        'hex_limit': 4.0,
                     },
                     'Base64HighEntropyString': {
-                        'base64_limit': [2],
+                        'base64_limit': 2.0,
                     },
+                    'PrivateKeyDetector': False,
+                    'BasicAuthDetector': {},
                 },
-                base_temp_dir=os.path.expanduser('~/.detect-secrets-server'),
+                rootdir=mock_rootdir,
                 baseline_filename='baseline.file',
                 exclude_regex='something_here',
+                s3_config=None,
             )
 
     def test_cron_output_and_file_writes(self, mock_file_operations):
@@ -158,11 +172,13 @@ class TestInitialize(object):
                 self.mock_config_data(),
                 self.mock_config_data({
                     'repo': 'git@github.com:yelp/detect-secrets-server',
-                    'cron': '* * 2 * *',
+                    'crontab': '* * 2 * *',
                     'sha': '449360c3a9a4fb76fba90a2b9de9cb5ea812726d',
-                    'baseline_file': '.secrets.baseline',
+                    'baseline': '.secrets.baseline',
                     'plugins': {
-                        'HexHighEntropyString': 2,
+                        'HexHighEntropyString': {
+                            'hex_limit': 2,
+                        },
                     },
                     'exclude_regex': 'tests/*',
                 }),
@@ -173,10 +189,10 @@ class TestInitialize(object):
         assert initialize(args) == (
             '# detect-secrets scanner\n'
             '* * 4 * *    detect-secrets-server '
-            '--scan-repo yelp/detect-secrets '
+            'scan yelp/detect-secrets '
             '--output-hook examples/standalone_hook.py\n'
             '* * 2 * *    detect-secrets-server '
-            '--scan-repo yelp/detect-secrets-server '
+            'scan yelp/detect-secrets-server '
             '--output-hook examples/standalone_hook.py'
         )
 
@@ -186,13 +202,18 @@ class TestInitialize(object):
                     'sha': 'afe6f0bced18a7f7d56975e6d0cdb45b95fbb4b1',
                     'repo': 'git@github.com:yelp/detect-secrets',
                     'plugins': {
-                        'HexHighEntropyString': 3,
-                        'Base64HighEntropyString': 4.5,
-                        'PrivateKeyDetector': True,
+                        'HexHighEntropyString': {
+                            'hex_limit': 3,
+                        },
+                        'Base64HighEntropyString': {
+                            'base64_limit': 4.5,
+                        },
+                        'PrivateKeyDetector': {},
+                        'BasicAuthDetector': {},
                     },
-                    'cron': '* * 4 * *',
-                    'baseline_filename': '',
-                    'exclude_regex': '',
+                    'crontab': '* * 4 * *',
+                    'baseline_filename': None,
+                    'exclude_regex': None,
                 }, indent=2, sort_keys=True)
             ),
             mock.call(
@@ -200,11 +221,16 @@ class TestInitialize(object):
                     'sha': '449360c3a9a4fb76fba90a2b9de9cb5ea812726d',
                     'repo': 'git@github.com:yelp/detect-secrets-server',
                     'plugins': {
-                        'HexHighEntropyString': 2,
-                        'Base64HighEntropyString': 4.5,
-                        'PrivateKeyDetector': True,
+                        'HexHighEntropyString': {
+                            'hex_limit': 2,
+                        },
+                        'Base64HighEntropyString': {
+                            'base64_limit': 4.5,
+                        },
+                        'PrivateKeyDetector': {},
+                        'BasicAuthDetector': {},
                     },
-                    'cron': '* * 2 * *',
+                    'crontab': '* * 2 * *',
                     'baseline_filename': '.secrets.baseline',
                     'exclude_regex': 'tests/*',
                 }, indent=2, sort_keys=True),
@@ -219,7 +245,7 @@ class TestInitialize(object):
         required_args = {
             'repo': 'git@github.com:yelp/detect-secrets',
             'sha': 'afe6f0bced18a7f7d56975e6d0cdb45b95fbb4b1',
-            'cron': '* * 4 * *',
+            'crontab': '* * 4 * *',
         }
 
         required_args.update(extra_data)
@@ -231,42 +257,40 @@ class TestAddRepo(object):
 
     @staticmethod
     def parse_args(argument_string='', is_s3=False):
-        default_arguments = (
-            '--base-temp-dir /tmp/.detect-secrets-server'
-        )
-
-        with mock.patch.object(
-            ServerParserBuilder,
-            '_enable_s3_backend',
+        with mock.patch(
+            'detect_secrets_server.core.usage.s3.should_enable_s3_options',
             return_value=is_s3,
         ):
             return ServerParserBuilder().parse_args(
-                '{} {}'.format(
-                    default_arguments,
-                    argument_string
-                ).split()
+                argument_string.split()
             )
 
-    def test_add_non_local_repo(self, mock_file_operations):
-        self.add_non_local_repo()
+    def test_add_non_local_repo(self, mock_file_operations, mock_rootdir):
+        self.add_non_local_repo(mock_rootdir)
         mock_file_operations.write.assert_called_with(
             json.dumps({
                 'sha': 'mocked_sha',
                 'repo': 'git@github.com:yelp/detect-secrets',
                 'plugins': {
-                    'HexHighEntropyString': 3,
-                    'Base64HighEntropyString': 4.5,
-                    'PrivateKeyDetector': True,
+                    'HexHighEntropyString': {
+                        'hex_limit': 3,
+                    },
+                    'Base64HighEntropyString': {
+                        'base64_limit': 4.5,
+                    },
+                    'PrivateKeyDetector': {},
+                    'BasicAuthDetector': {},
                 },
-                'cron': '',
-                'baseline_filename': '',
-                'exclude_regex': '',
+                'crontab': '',
+                'baseline_filename': None,
+                'exclude_regex': None,
             }, indent=2, sort_keys=True),
         )
 
     def test_never_override_meta_tracking_if_already_exists(
-            self,
-            mock_file_operations
+        self,
+        mock_file_operations,
+        mock_rootdir,
     ):
         with mock.patch(
             'detect_secrets_server.storage.file.FileStorage.get_tracked_file_location',
@@ -274,14 +298,15 @@ class TestAddRepo(object):
             # This doesn't matter what it is, just that it exists.
             return_value='examples/config.yaml',
         ):
-            self.add_non_local_repo()
+            self.add_non_local_repo(mock_rootdir)
 
         assert not mock_file_operations.write.called
 
-    def add_non_local_repo(self):
+    def add_non_local_repo(self, mock_rootdir):
         repo = 'git@github.com:yelp/detect-secrets'
-        directory = '/tmp/.detect-secrets-server/repos/{}'.format(
-            BaseStorage.hash_filename('yelp/detect-secrets')
+        directory = '{}/repos/{}'.format(
+            mock_rootdir,
+            BaseStorage.hash_filename('yelp/detect-secrets'),
         )
 
         git_calls = [
@@ -298,7 +323,7 @@ class TestAddRepo(object):
         ]
 
         with mock_git_calls(*git_calls):
-            args = self.parse_args('--add-repo {}'.format(repo))
+            args = self.parse_args('add {} --root-dir {}'.format(repo, mock_rootdir))
             add_repo(args)
 
     def test_add_local_repo(self, mock_file_operations):
@@ -321,7 +346,7 @@ class TestAddRepo(object):
 
         with mock_git_calls(*git_calls):
             args = self.parse_args(
-                '--add-repo {} --baseline .secrets.baseline --local'.format(
+                'add {} --baseline .secrets.baseline --local'.format(
                     repo,
                 )
             )
@@ -333,19 +358,24 @@ class TestAddRepo(object):
                 'sha': 'mocked_sha',
                 'repo': 'examples',
                 'plugins': {
-                    'HexHighEntropyString': 3,
-                    'Base64HighEntropyString': 4.5,
-                    'PrivateKeyDetector': True,
+                    'HexHighEntropyString': {
+                        'hex_limit': 3,
+                    },
+                    'Base64HighEntropyString': {
+                        'base64_limit': 4.5,
+                    },
+                    'PrivateKeyDetector': {},
+                    'BasicAuthDetector': {},
                 },
-                'cron': '',
+                'crontab': '',
                 'baseline_filename': '.secrets.baseline',
-                'exclude_regex': '',
+                'exclude_regex': None,
             }, indent=2, sort_keys=True)
         )
 
-    def test_add_s3_backend_repo(self, mock_file_operations):
+    def test_add_s3_backend_repo(self, mock_file_operations, mocked_boto):
         args = self.parse_args(
-            '--add-repo {} '
+            'add {} '
             '--local '
             '--s3-credentials-file examples/aws_credentials.json '
             '--s3-bucket pail'.format('examples'),
@@ -374,12 +404,8 @@ class TestAddRepo(object):
 
         with mock_git_calls(
             *git_calls
-        ), mock.patch(
-            'detect_secrets_server.storage.s3.boto3.client',
-            return_value=mock.Mock(),
-        ) as mock_client:
-            mock_client().list_objects_v2.return_value = {}
-
+        ):
+            mocked_boto.list_objects_v2.return_value = {}
             add_repo(args)
 
 
@@ -391,8 +417,8 @@ def mock_repos_config(data):
     be OK.
     """
     with mock.patch(
-            'detect_secrets_server.usage.config_file',
-            return_value=data,
+        'detect_secrets_server.core.usage.add.config_file',
+        return_value=data,
     ):
         yield
 
@@ -403,6 +429,6 @@ def mock_repo_class(classname):
     :type classname: str
     """
     with mock.patch(
-            'detect_secrets_server.repos.factory.{}'.format(classname),
+        'detect_secrets_server.repos.factory.{}'.format(classname),
     ) as repo_class:
         yield repo_class

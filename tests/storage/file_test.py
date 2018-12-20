@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import json
-import os
 import sys
 from contextlib import contextmanager
 
@@ -18,34 +17,39 @@ except NameError:
     FileNotFoundError = IOError
 
 
+@pytest.fixture
+def file_storage(mock_rootdir):
+    return FileStorage(mock_rootdir)
+
+
+@pytest.fixture
+def local_file_storage(mock_rootdir):
+    return FileStorageWithLocalGit(mock_rootdir)
+
+
 class TestFileStorage(object):
 
-    def logic(self):
-        return FileStorage(
-            os.path.expanduser('~/.detect-secrets-server'),
-        )
-
-    def test_setup_creates_directories(self):
+    def test_setup_creates_directories(self, file_storage, mock_rootdir):
         with assert_directories_created([
-            '~/.detect-secrets-server',
-            '~/.detect-secrets-server/repos',
-            '~/.detect-secrets-server/tracked',
+            mock_rootdir,
+            mock_rootdir + '/repos',
+            mock_rootdir + '/tracked',
         ]):
-            self.logic().setup('git@github.com:yelp/detect-secrets')
+            file_storage.setup('git@github.com:yelp/detect-secrets')
 
-    def test_get_success(self):
+    def test_get_success(self, file_storage):
         with mock_open({'key': 'value'}):
-            data = self.logic().get('does_not_matter')
+            data = file_storage.get('does_not_matter')
 
         assert data == {'key': 'value'}
 
-    def test_get_failure(self):
+    def test_get_failure(self, file_storage):
         with pytest.raises(FileNotFoundError):
-            self.logic().get('file_does_not_exist')
+            file_storage.get('file_does_not_exist')
 
-    def test_put_success(self):
+    def test_put_success(self, file_storage):
         with mock_open() as m:
-            self.logic().put('filename', {
+            file_storage.put('filename', {
                 'key': 'value',
             })
 
@@ -62,26 +66,21 @@ class TestFileStorage(object):
 
 class TestFileStorageWithLocalGit(object):
 
-    def logic(self):
-        return FileStorageWithLocalGit(
-            os.path.expanduser('~/.detect-secrets-server'),
-        )
-
-    def test_setup_creates_directories(self):
+    def test_setup_creates_directories(self, local_file_storage, mock_rootdir):
         with assert_directories_created([
-            '~/.detect-secrets-server',
-            '~/.detect-secrets-server/tracked',
-            '~/.detect-secrets-server/tracked/local',
+            mock_rootdir,
+            mock_rootdir + '/tracked',
+            mock_rootdir + '/tracked/local',
         ]):
-            self.logic().setup('git@github.com:yelp/detect-secrets')
+            local_file_storage.setup('git@github.com:yelp/detect-secrets')
 
-    def test_get_success(self):
+    def test_get_success(self, local_file_storage, mock_rootdir):
         with mock_open() as m:
-            self.logic().get('mock_filename')
+            local_file_storage.get('mock_filename')
 
             m.assert_called_with(
-                os.path.expanduser(
-                    '~/.detect-secrets-server/tracked/local/mock_filename.json'
+                '{}/tracked/local/mock_filename.json'.format(
+                    mock_rootdir,
                 ),
             )
 

@@ -16,23 +16,24 @@ def parse_args(argv):
 def main(argv=None):
     """
     Expected Usage:
-      1. Initialize TrackedRepos from config.yaml, and save to crontab.
+      1. Initialize TrackedRepos, and save to crontab.
       2. Each cron command will run and scan git diff from previous commit saved, to now.
       3. If something is found, alert.
 
     :return: shell error code
     """
-    if len(sys.argv) == 1:  # pragma: no cover
-        sys.argv.append('-h')
+    if not argv:
+        argv = sys.argv[1:]
+
+    if len(argv) == 1:  # pragma: no cover
+        argv.append('-h')
 
     args = parse_args(argv)
     if args.verbose:    # pragma: no cover
         log.set_debug_level(args.verbose)
 
-    print(args)
-    return
     if args.action == 'add':
-        if isinstance(args.repo, dict):
+        if getattr(args, 'config', False):
             output = actions.initialize(args)
             if output:
                 print(output)

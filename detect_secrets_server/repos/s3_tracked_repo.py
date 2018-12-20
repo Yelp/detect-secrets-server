@@ -19,17 +19,17 @@ class S3TrackedRepo(BaseTrackedRepo):
         )
 
     def __init__(
-            self,
-            repo,
-            sha,
-            plugins,
-            baseline_filename,
-            exclude_regex,
-            s3_config,
-            cron='',
-            base_temp_dir=None,
-            *args,
-            **kwargs
+        self,
+        repo,
+        sha,
+        plugins,
+        baseline_filename,
+        exclude_regex,
+        s3_config,
+        crontab='',
+        rootdir=None,
+        *args,
+        **kwargs
     ):
         """
         :type s3_config: dict
@@ -40,10 +40,10 @@ class S3TrackedRepo(BaseTrackedRepo):
                 an optional prefix to append to the start of the path,
                 so it can be placed in the s3 bucket appropriately.
 
-            bucket: str
+            bucket_name: str
                 the bucket name to upload the meta files to
 
-            creds_filename: str
+            credentials_filename: str
                 filepath to s3 credentials file. This is needed for cron
                 output.
 
@@ -67,8 +67,8 @@ class S3TrackedRepo(BaseTrackedRepo):
             plugins,
             baseline_filename,
             exclude_regex,
-            cron,
-            base_temp_dir,
+            crontab,
+            rootdir,
             **kwargs
         )
 
@@ -91,17 +91,17 @@ class S3TrackedRepo(BaseTrackedRepo):
         )
 
     @classmethod
-    def modify_tracked_file_contents(cls, data):
-        data = super(S3TrackedRepo, cls).modify_tracked_file_contents(data)
-        data.update(cls.init_vars)
+    def get_tracked_repo_data(cls, storage, repo_name):
+        output = super(S3TrackedRepo, cls).get_tracked_repo_data(storage, repo_name)
+        output['s3_config'] = cls.init_vars['s3_config']
 
-        return data
+        return output
 
     def cron(self):
         output = super(S3TrackedRepo, self).cron()
         return '{} --s3-credentials-file {} --s3-bucket {} --s3-prefix {}'.format(
             output,
-            self.s3_config['creds_filename'],
+            self.s3_config['credentials_filename'],
             self.s3_config['bucket'],
             self.s3_config['prefix'],
         )

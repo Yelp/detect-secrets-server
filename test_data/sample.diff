@@ -1,20 +1,11 @@
-diff --git a/detect_secrets_server/usage.py b/detect_secrets_server/usage.py
-index 0548ee1..bef9825 100644
---- a/detect_secrets_server/usage.py
-+++ b/detect_secrets_server/usage.py
-@@ -133,6 +133,7 @@ class ActionOptions(object):
-                 is_git_url(action)
-             else:
-                 is_valid_file(action)
-+        key = '0123456789'
-         elif args.scan_repo and args.local:
-             is_valid_file(action)
-
-@@ -228,6 +229,7 @@ class InitializeOptions(object):
-             if 'exclude_regex' in data and not args.exclude_regex:
-                 args.exclude_regex = [data['exclude_regex']]
-
-+        # This isn't needed anymore
-         delattr(args, 'config_file')
-
-         if not args.base_temp_dir:
+diff --git a/examples/aws_credentials.json b/examples/aws_credentials.json
+index 05c305b..4764bb2 100644
+--- a/examples/aws_credentials.json
++++ b/examples/aws_credentials.json
+@@ -1,4 +1,4 @@
+ {
+-    "accessKeyId": "access_key",
+-    "secretAccessKey": "secret_key"
++    "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
++    "secretAccessKey": "81442db33ceee1092586feb635d7b3c5d72257c775ee323414bac8e673d41af3"
+ }

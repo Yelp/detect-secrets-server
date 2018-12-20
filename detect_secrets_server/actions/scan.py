@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from detect_secrets.core.log import log
 
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
@@ -33,6 +35,16 @@ def scan_repo(args):
     return 0
 
 
+def _update_tracked_repo(repo):
+    """Save and update records, since the latest scan indicates that the
+    most recent commit is clean.
+    """
+    log.info('No secrets found for %s', repo.name)
+
+    repo.update()
+    repo.save(OverrideLevel.ALWAYS)
+
+
 def _alert_on_secrets_found(repo, secrets, output_hook):
     """
     :type repo: detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo
@@ -48,16 +60,6 @@ def _alert_on_secrets_found(repo, secrets, output_hook):
     _set_authors_for_found_secrets(repo, secrets)
 
     output_hook.alert(repo.name, secrets)
-
-
-def _update_tracked_repo(repo):
-    """Save and update records, since the latest scan indicates that the
-    most recent commit is clean.
-    """
-    log.info('No secrets found for %s', repo.name)
-
-    repo.update()
-    repo.save(OverrideLevel.ALWAYS)
 
 
 def _set_authors_for_found_secrets(repo, secrets):

@@ -1,31 +1,26 @@
 from __future__ import absolute_import
 
-from detect_secrets_server.plugins import PluginsConfigParser
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.factory import tracked_repo_factory
 
 
 def add_repo(args):
     """Sets up an individual repository for tracking."""
-    repo_class = tracked_repo_factory(
-        args.local,
-        bool(getattr(args, 's3_config', None)),
-    )
-
-    repo = repo_class(
+    repo = _create_single_tracked_repo(
         repo=args.repo,
 
         # Will be updated to HEAD upon first update
         sha='',
 
-        # TODO: Comment
-        cron='',
+        # TODO: Why is this the case?
+        crontab='',
 
         plugins=args.plugins,
-        base_temp_dir=args.root_dir,
+        rootdir=args.root_dir,
         baseline_filename=args.baseline,
         exclude_regex=args.exclude_regex,
 
+        is_local=args.local,
         s3_config=getattr(args, 's3_config', None),
     )
 
@@ -38,13 +33,22 @@ def initialize(args):
 
     Sets up local file storage for tracking repositories.
     """
-    tracked_repos = _load_from_config(
-        args.repo,
-        args.plugins,
-        args.root_dir,
-        args.baseline,
-        args.exclude_regex,
-    )
+    tracked_repos = [
+        _create_single_tracked_repo(
+            repo=repo['repo'],
+            sha=repo['sha'],
+            crontab=repo['crontab'],
+            plugins=repo['plugins'],
+            baseline_filename=repo['baseline'],
+            exclude_regex=repo['exclude_regex'],
+
+            is_local=repo.get('is_local_repo', False),
+            s3_config=getattr(args, 's3_config', None) if repo.get('s3_backend', False) else None,
+
+            rootdir=args.root_dir,
+        )
+        for repo in args.repo
+    ]
 
     cron_repos = [repo for repo in tracked_repos if _clone_and_save_repo(repo)]
     if not cron_repos:
@@ -58,6 +62,70 @@ def initialize(args):
         )
 
     return output
+
+
+def _create_single_tracked_repo(
+    repo,
+    sha,
+    crontab,
+    plugins,
+    rootdir,
+    baseline_filename,
+    exclude_regex,
+    is_local,
+    s3_config,
+):
+    """
+    These are REQUIRED arguments:
+        :type repo: str
+        :param repo: The url to clone, in `git clone <url>`
+
+        :type sha: str
+        :param sha: Last commit hash scanned
+
+        :type crontab: str
+        :param crontab: crontab syntax, denoting frequency of repo scan
+
+    These arguments can have global defaults:
+        :type plugins: dict
+        :param plugins: mapping of plugin classnames to initialization values
+
+        :type baseline_filename: str
+        :param baseline_filename: repo-specific filename of baseline file
+
+    Optional arguments include:
+        :type rootdir: str
+        :param rootdir: location of where you want to clone the repo for
+            local storage
+
+        :type exclude_regex: str
+        :param exclude_regex: filenames that match this regex will be excluded from
+            scanning.
+
+        :type is_local: bool
+        :param is_local: indicates that repository is locally stored (no need to
+            git clone)
+
+        :type s3_config: dict
+        :param s3_config: files generated to save state will be synced with Amazon S3.
+    """
+    repo_class = tracked_repo_factory(
+        is_local,
+        bool(s3_config),
+    )
+
+    return repo_class(
+        repo=repo,
+        sha=sha,
+        crontab=crontab,
+
+        plugins=plugins,
+        rootdir=rootdir,
+        baseline_filename=baseline_filename,
+        exclude_regex=exclude_regex,
+
+        s3_config=s3_config,
+    )
 
 
 def _clone_and_save_repo(repo):
@@ -74,111 +142,3 @@ def _clone_and_save_repo(repo):
 
     # Save the last_commit_hash, if we have nothing on file already
     return repo.save(OverrideLevel.NEVER)
-
-
-def _load_from_config(
-    repos,
-    default_plugins,
-    base_temp_dir,
-    baseline_filename,
-    exclude_regex
-):
-    """For expected config format, see `examples/repos.yaml`.
-
-    :type repos: dict
-    :param repos: content of repos.yaml
-
-    :type default_plugins: dict
-    :param default_plugins: output of
-        detect_secrets.core.usage.PluginOptions.consolidate_args
-
-    :type base_temp_dir: str
-    :type baseline_filename: str
-    :type exclude_regex: str
-
-    :returns: list of TrackedRepos
-    :raises: IOError
-    """
-    output = []
-    if not repos.get('tracked'):
-        return output
-
-    for entry in repos['tracked']:
-        output.append(
-            _initialize_repo_from_config_entry(
-                entry,
-                default_plugins,
-                base_temp_dir,
-                baseline_filename,
-                exclude_regex,
-            )
-        )
-
-    return output
-
-
-def _initialize_repo_from_config_entry(
-    entry,
-    default_plugins,
-    base_temp_dir,
-    baseline_filename,
-    exclude_regex
-):
-    """
-    :type entry: dict
-    :param entry: supports the following options
-        Required arguments:
-            repo: str
-                The url to clone, in `git clone <url>`.
-            sha: str
-                Last commit hash scanned.
-            cron: str
-                crontab syntax, denoting frequency of repo scan.
-
-        Arguments that can have global defaults:
-            plugins: dict
-                mapping of plugin classnames to initialization values.
-            baseline_file: str
-                repo-specific filename of baseline file.
-            exclude_regex: str
-                filenames that match this regex will be excluded from scanning.
-
-        Optional arguments include:
-            is_local_repo: bool
-                indicates that repository is locally stored (no need to git clone)
-            s3_backend: bool
-                files generated to save state will be synced with Amazon S3.
-
-        These entries take precedence over default options.
-
-    :type default_plugins: dict
-    :type base_temp_dir: str
-    :type baseline_filename: str
-    :type exclude_regex: str
-    """
-    if entry.get('plugins'):
-        default_plugins = PluginsConfigParser.from_args(default_plugins)
-        default_plugins.update(PluginsConfigParser.from_config(entry['plugins']))
-        default_plugins = default_plugins.to_args()
-
-    if entry.get('baseline_file'):
-        baseline_filename = entry['baseline_file']
-
-    if entry.get('exclude_regex'):
-        exclude_regex = entry['exclude_regex']
-
-    repo_class = tracked_repo_factory(
-        entry.get('is_local_repo', False),
-        entry.get('s3_backend', False),
-    )
-
-    # TODO: Pass in s3_config_file
-    return repo_class(
-        repo=entry['repo'],
-        sha=entry['sha'],
-        cron=entry['cron'],
-        plugins=default_plugins,
-        base_temp_dir=base_temp_dir,
-        baseline_filename=baseline_filename,
-        exclude_regex=exclude_regex,
-    )

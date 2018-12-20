@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import json
-import os
 
 import mock
 import pytest
@@ -22,13 +21,13 @@ class TestLocalTrackedRepo(object):
         ):
             assert mock_logic.cron() == (
                 '1 2 3 4 5    detect-secrets-server '
-                '--scan-repo yelp/detect-secrets '
+                'scan yelp/detect-secrets '
                 '--local'
             )
 
 
 @pytest.fixture
-def mock_logic(mock_tracked_repo_data):
+def mock_logic(mock_tracked_repo_data, mock_rootdir):
     mock_tracked_repo_data['repo'] = 'does_not_matter'
 
     mock_open = mock.mock_open(read_data=json.dumps(
@@ -43,5 +42,5 @@ def mock_logic(mock_tracked_repo_data):
     ):
         return LocalTrackedRepo.load_from_file(
             'will_be_mocked',
-            os.path.expanduser('~/.detect-secrets-server'),
+            mock_rootdir,
         )
