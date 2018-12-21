@@ -38,6 +38,10 @@ class S3Storage(FileStorage):
 
         return super(S3Storage, self).get(key)
 
+    def get_tracked_repositories(self):
+        # TODO
+        pass
+
     def upload(self, key, value):
         """This is different than `put`, to support situations where you
         may want to upload locally, but not to be sync'ed with the cloud.

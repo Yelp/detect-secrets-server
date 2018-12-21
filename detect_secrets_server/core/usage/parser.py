@@ -3,10 +3,10 @@ from __future__ import absolute_import
 import argparse
 
 from detect_secrets.core.usage import ParserBuilder
-from detect_secrets.core.usage import PluginOptions
 
 import detect_secrets_server
 from .add import AddOptions
+from .install import InstallOptions
 from .scan import ScanOptions
 
 
@@ -35,7 +35,7 @@ class ServerParserBuilder(ParserBuilder):
             dest='action',
         )
 
-        for option in [AddOptions, ScanOptions]:
+        for option in [AddOptions, InstallOptions, ScanOptions]:
             option(subparser).add_arguments()
 
         return self
@@ -49,14 +49,17 @@ class ServerParserBuilder(ParserBuilder):
         try:
             if output.action == 'add':
                 AddOptions.consolidate_args(output)
+                if getattr(output, 'config', False):
+                    apply_default_plugin_options_to_repos(output)
+
             elif output.action == 'scan':
                 ScanOptions.consolidate_args(output)
+
+            elif output.action == 'install':
+                InstallOptions.consolidate_args(output)
+
         except argparse.ArgumentTypeError as e:
             self.parser.error(e)
-
-        PluginOptions.consolidate_args(output)
-        if getattr(output, 'config', False):
-            apply_default_plugin_options_to_repos(output)
 
         return output
 
@@ -75,6 +78,7 @@ def apply_default_plugin_options_to_repos(args):
             'baseline',
             'exclude_regex',
             'storage',
+            'crontab',
         ):
             if key not in tracked_repo:
                 tracked_repo[key] = getattr(args, key)

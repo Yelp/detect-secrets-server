@@ -1,5 +1,7 @@
 import os
 
+from detect_secrets.core.usage import PluginOptions
+
 from .common.options import CommonOptions
 from .common.output import OutputOptions
 from .common.validators import is_valid_file
@@ -29,7 +31,9 @@ class ScanOptions(CommonOptions):
             ),
         )
 
-        OutputOptions(self.parser)
+        self.add_local_flag()
+        for option in [PluginOptions, OutputOptions]:
+            option(self.parser).add_arguments()
 
         return self
 
@@ -43,3 +47,5 @@ class ScanOptions(CommonOptions):
         if args.local:
             is_valid_file(args.repo)
             args.repo = os.path.abspath(args.repo)
+
+        PluginOptions.consolidate_args(args)

@@ -13,7 +13,8 @@ class TestMain(object):
         cache_buster()
 
     def test_no_args(self):
-        assert main([]) == 0
+        with pytest.raises(SystemExit):
+            main([])
 
     @pytest.mark.parametrize(
         'argument_string,action_executed',

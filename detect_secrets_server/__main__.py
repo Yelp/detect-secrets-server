@@ -22,10 +22,10 @@ def main(argv=None):
 
     :return: shell error code
     """
-    if argv is None:
+    if argv is None:    # pragma: no cover
         argv = sys.argv[1:]
 
-    if len(argv) == 1:  # pragma: no cover
+    if len(argv) == 0:  # pragma: no cover
         argv.append('-h')
 
     args = parse_args(argv)
@@ -34,11 +34,12 @@ def main(argv=None):
 
     if args.action == 'add':
         if getattr(args, 'config', False):
-            output = actions.initialize(args)
-            if output:
-                print(output)
+            actions.initialize(args)
         else:
             actions.add_repo(args)
+
+    elif args.action == 'install':
+        actions.install_mapper(args)
 
     elif args.action == 'scan':
         return actions.scan_repo(args)

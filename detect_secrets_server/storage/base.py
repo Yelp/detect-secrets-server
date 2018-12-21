@@ -1,6 +1,8 @@
 import hashlib
 import os
 import subprocess
+from abc import ABCMeta
+from abc import abstractmethod
 
 from detect_secrets.core.log import log
 
@@ -20,9 +22,28 @@ class BaseStorage(object):
         root
           |- repos      # This is where git repos are cloned to
     """
+    __metaclass__ = ABCMeta
 
     def __init__(self, base_directory):
         self.root = base_directory
+
+    @abstractmethod
+    def get(self, key):
+        """Retrieve from storage."""
+        pass
+
+    @abstractmethod
+    def put(self, key, value):
+        """Store in storage."""
+        pass
+
+    @abstractmethod
+    def get_tracked_repositories(self):
+        """Return iterator over tracked repositories.
+
+        :rtype: (dict, bool)
+        """
+        pass
 
     def setup(self, repo_url):
         """

@@ -12,9 +12,7 @@ def add_repo(args):
         # Will be updated to HEAD upon first update
         sha='',
 
-        # TODO: Why is this the case?
-        crontab='',
-
+        crontab=args.crontab,
         plugins=args.plugins,
         rootdir=args.root_dir,
         baseline_filename=args.baseline,
@@ -52,18 +50,6 @@ def initialize(args):
 
     for repo in tracked_repos:
         _clone_and_save_repo(repo)
-    # cron_repos = [repo for repo in tracked_repos if _clone_and_save_repo(repo)]
-    # if not cron_repos:
-        # return
-
-    # output = '# detect-secrets scanner'
-    # for repo in cron_repos:
-        # output += '\n{} {}'.format(
-        # repo.cron(),
-        # args.output_hook_command,
-        # )
-
-    # return output
 
 
 def _create_single_tracked_repo(

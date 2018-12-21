@@ -27,8 +27,7 @@ Therefore, `detect-secrets-server` accomplishes several things:
 ```
 $ pip install detect-secrets-server
 $ detect-secrets-server add git@github.com:yelp/detect-secrets
-$ detect-secrets-server install cron > output
-$ echo -e "$(crontab -l)\n\n$(cat output)" | crontab -
+$ detect-secrets-server install cron
 ```
 
 This will add `detect-secrets` as a tracked repository, TODO
@@ -76,7 +75,7 @@ Tracked repository options are as follows:
 | attribute      | description
 | -------------- | -----------
 | repo           | git URL or local file path to clone (**required**).
-| crontab        | [crontab syntax](https://crontab.guru/) of how often to run a scan for this repo (**required**).
+| crontab        | [crontab syntax](https://crontab.guru/) of how often to run a scan for this repo.
 | sha            | The commit hash to start scanning from. If not provided, will use HEAD.
 | storage        | Either one of the following: (`file`, `s3`). Determines where to store metadata. Defaults to `file`.
 | is\_local\_repo| True/False depending on if the repo is already on the filesystem. Defaults to False.

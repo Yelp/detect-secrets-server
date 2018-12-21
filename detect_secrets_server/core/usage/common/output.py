@@ -22,6 +22,7 @@ class OutputOptions(object):
             ),
         )
 
+    def add_arguments(self):
         self.parser.add_argument(
             '--output-hook',
             type=_is_valid_output_hook,
@@ -47,6 +48,8 @@ class OutputOptions(object):
             ),
             metavar='CONFIG_FILENAME',
         )
+
+        return self
 
     @staticmethod
     def consolidate_args(args):
@@ -123,8 +126,11 @@ def _initialize_output_hook_and_raw_command(hook_name, config_filename):
         )
 
     # These values are not user injectable, so it should be ok.
-    module = import_module(hook_found.module_name)
-    hook_class = getattr(module, hook_found.class_name)
+    try:
+        module = import_module(hook_found.module_name)
+        hook_class = getattr(module, hook_found.class_name)
+    except ImportError as e:
+        raise argparse.ArgumentTypeError(str(e))
 
     if hook_found.config_setting == HookDescriptor.CONFIG_NOT_SUPPORTED:
         return hook_class(), command

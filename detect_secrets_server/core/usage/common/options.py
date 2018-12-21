@@ -1,8 +1,6 @@
 import os
 from abc import ABCMeta
 
-from detect_secrets.core.usage import PluginOptions
-
 from .. import s3
 from .storage import get_storage_options
 
@@ -18,9 +16,8 @@ class CommonOptions(object):
     def __init__(self, subparser, action):
         self.parser = subparser.add_parser(action)
         self._add_common_arguments()
-        PluginOptions(self.parser).add_arguments()
 
-    def _add_common_arguments(self):
+    def add_local_flag(self):
         self.parser.add_argument(
             '-L',
             '--local',
@@ -31,6 +28,9 @@ class CommonOptions(object):
             ),
         )
 
+        return self
+
+    def _add_common_arguments(self):
         self.parser.add_argument(
             '-s',
             '--storage',

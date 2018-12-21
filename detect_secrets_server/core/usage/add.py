@@ -1,6 +1,7 @@
 import argparse
 import os
 
+from crontab import CronSlices
 from detect_secrets.core.log import log
 from detect_secrets.core.usage import PluginOptions
 
@@ -27,8 +28,11 @@ class AddOptions(CommonOptions):
             ),
         )
 
-        self._add_config_flag_argument()\
-            ._add_initialize_options()
+        self.add_local_flag()\
+            ._add_config_flag_argument()\
+            ._add_initialize_options()\
+            ._add_crontab_argument()
+        PluginOptions(self.parser).add_arguments()
 
         return self
 
@@ -41,6 +45,17 @@ class AddOptions(CommonOptions):
                 'Indicates that the repo argument is a config file, '
                 'that should be used for initializing tracked repositories.'
             ),
+        )
+
+        return self
+
+    def _add_crontab_argument(self):
+        self.parser.add_argument(
+            '--crontab',
+            nargs=1,
+            default=['0 0 * * *'],
+            type=_is_valid_crontab,
+            help='Indicates the frequency which the repository should be scanned.',
         )
 
         return self
@@ -74,6 +89,8 @@ class AddOptions(CommonOptions):
             metavar='REGEX',
         )
 
+        return self
+
     @staticmethod
     def consolidate_args(args):
         """Validation and appropriate formatting of args.repo"""
@@ -103,6 +120,7 @@ class AddOptions(CommonOptions):
         # This needs to be run *after* args.repo is consolidated, so S3Options
         # can work properly.
         CommonOptions.consolidate_args(args)
+        PluginOptions.consolidate_args(args)
 
 
 def _consolidate_initialize_args(args):
@@ -111,6 +129,9 @@ def _consolidate_initialize_args(args):
 
     if args.exclude_regex:
         args.exclude_regex = args.exclude_regex[0]
+
+    if args.crontab:
+        args.crontab = args.crontab[0]
 
 
 def _consolidate_config_file_plugin_options(args):
@@ -203,3 +224,12 @@ def _should_discard_tracked_repo_in_config(tracked_repo):
         # to hard fail if one out of many repositories are bad.
         log.error(str(e))
         return True
+
+
+def _is_valid_crontab(crontab):
+    if CronSlices.is_valid(crontab):
+        return crontab
+
+    raise argparse.ArgumentTypeError(
+        'Invalid crontab.',
+    )

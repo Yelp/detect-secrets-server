@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 
 import mock
@@ -22,7 +23,7 @@ def mock_rootdir():
     try:
         yield pathname
     finally:
-        os.rmdir(pathname)
+        shutil.rmtree(pathname)
 
 
 @pytest.fixture

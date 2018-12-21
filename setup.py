@@ -9,7 +9,10 @@ setup(
     packages=find_packages(exclude=(['test*', 'tmp*'])),
     version=detect_secrets_server.__version__,
     description='Tool for setting up a detect-secrets server',
-    long_description="Check out detect-secrets-server on `GitHub <https://github.com/Yelp/detect-secrets-server>`_!",
+    long_description=(
+        'Check out detect-secrets-server on '
+        '`GitHub <https://github.com/Yelp/detect-secrets-server>`_!'
+    ),
     license="Copyright Yelp, Inc. 2018",
     author='Aaron Loo',
     author_email='aaronloo@yelp.com',
@@ -25,6 +28,7 @@ setup(
         'detect-secrets',
         'pyyaml',
         'unidiff',
+        'python-crontab',
     ],
     extra_requires={
         ':python_version=="2.7"': [

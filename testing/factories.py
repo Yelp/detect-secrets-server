@@ -1,7 +1,41 @@
 from __future__ import absolute_import
 
+import json as json_module
+
 from detect_secrets.core.potential_secret import PotentialSecret
 from detect_secrets.core.secrets_collection import SecretsCollection
+
+
+def metadata_factory(repo, json=False, **kwargs):
+    """
+    This generates a layout you would expect for metadata storage with files.
+
+    :type json: bool
+    :param json: if True, will return string instead.
+    """
+    output = {
+        "baseline_filename": None,
+        "crontab": "0 0 * * *",
+        "exclude_regex": None,
+        "plugins": {
+            "Base64HighEntropyString": {
+                "base64_limit": 4.5,
+            },
+            "BasicAuthDetector": {},
+            "HexHighEntropyString": {
+                "hex_limit": 3,
+            },
+            "PrivateKeyDetector": {},
+        },
+        "repo": repo,
+        "sha": 'does_not_matter',
+    }
+
+    output.update(kwargs)
+
+    if json:
+        return json_module.dumps(output, indent=2, sort_keys=True)
+    return output
 
 
 def potential_secret_factory(type_='type', filename='filename', lineno=1, secret='secret'):
