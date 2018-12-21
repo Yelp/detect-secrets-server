@@ -135,10 +135,11 @@ class BaseTrackedRepo(object):
             repo_name=self.name,
         )
 
-        baseline = self.storage.get_baseline_file(self.baseline_filename)
-        if baseline:
-            baseline_collection = SecretsCollection.load_baseline_from_string(baseline)
-            secrets = get_secrets_not_in_baseline(secrets, baseline_collection)
+        if self.baseline_filename:
+            baseline = self.storage.get_baseline_file(self.baseline_filename)
+            if baseline:
+                baseline_collection = SecretsCollection.load_baseline_from_string(baseline)
+                secrets = get_secrets_not_in_baseline(secrets, baseline_collection)
 
         return secrets
 

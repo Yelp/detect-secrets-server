@@ -82,6 +82,15 @@ class TestScan(object):
 
         assert len(secrets.data['examples/aws_credentials.json']) == 1
 
+    def test_no_baseline_file_provided(self, mock_logic, mock_rootdir):
+        repo = mock_logic(
+            baseline_filename=None,
+        )
+        with mock_git_calls(*self.git_calls(mock_rootdir)[:-1]):
+            secrets = repo.scan()
+
+        assert len(secrets.data['examples/aws_credentials.json']) == 1
+
     def test_scan_with_baseline(self, mock_logic, mock_rootdir):
         baseline = json.dumps({
             'results': {
@@ -275,18 +284,23 @@ def assert_writes_accurately(mock_open, mock_rootdir):
 
 @pytest.fixture
 def mock_logic(mock_rootdir):
-    def wrapped(mock_open=None):
+    def wrapped(mock_open=None, **kwargs):
         """
         :type mock_open: mock.mock_open
         :param mock_open: allows for customized mock_open,
             so can do assertions outside this function.
         """
         if not mock_open:
+            defaults = {
+                'repo': 'git@github.com:yelp/detect-secrets',
+                'baseline_filename': 'foobar',
+            }
+            defaults.update(kwargs)
+
             mock_open = mock.mock_open(
                 read_data=metadata_factory(
-                    'git@github.com:yelp/detect-secrets',
-                    baseline_filename='foobar',
                     json=True,
+                    **defaults
                 ),
             )
 
