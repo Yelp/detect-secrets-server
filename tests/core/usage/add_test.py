@@ -64,15 +64,8 @@ class TestAddOptions(UsageTest):
             self.parse_args('add will_be_mocked')
 
     def test_config_file(self):
-        # No output hook
-        # with pytest.raises(SystemExit):
-            # args = self.parse_args(
-                # 'add examples/repos.yaml --config',
-            # )
-
         args = self.parse_args(
             'add examples/repos.yaml --config '
-            '--output-hook examples/standalone_hook.py',
         )
 
         assert args.repo[0]['repo'] == \

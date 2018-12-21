@@ -47,7 +47,7 @@ class TestOutputOptions(UsageTest):
         a config file.
         """
         with mock.patch(
-            'detect_secrets_server.core.usage.common.options.ALL_HOOKS',
+            'detect_secrets_server.core.usage.common.output.ALL_HOOKS',
             [
                 HookDescriptor(
                     display_name='config_needed',
@@ -70,6 +70,6 @@ class TestOutputOptions(UsageTest):
         assert args.output_hook.filename == content
 
     def test_no_hook_provided(self):
-        args = self.parse_args('add git@git.github.com:Yelp/detect-secrets')
+        args = self.parse_args('scan git@git.github.com:Yelp/detect-secrets')
         assert isinstance(args.output_hook, StdoutHook)
         assert args.output_hook_command == ''

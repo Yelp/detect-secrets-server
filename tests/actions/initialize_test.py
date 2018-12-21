@@ -25,7 +25,6 @@ class TestInitialize(object):
     def parse_args(argument_string='', has_s3=False):
         base_argument = (
             'add will_be_mocked --config '
-            '--output-hook examples/standalone_hook.py '
         )
         if has_s3:
             base_argument += '--s3-config examples/s3.yaml '

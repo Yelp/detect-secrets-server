@@ -1,6 +1,7 @@
 import os
 
 from .common.options import CommonOptions
+from .common.output import OutputOptions
 from .common.validators import is_valid_file
 
 
@@ -28,12 +29,15 @@ class ScanOptions(CommonOptions):
             ),
         )
 
+        OutputOptions(self.parser)
+
         return self
 
     @staticmethod
     def consolidate_args(args):
         """Validation and appropriate formatting of args.repo"""
-        CommonOptions.consolidate_args(args)
+        for option in [CommonOptions, OutputOptions]:
+            option.consolidate_args(args)
 
         args.repo = args.repo[0]
         if args.local:
