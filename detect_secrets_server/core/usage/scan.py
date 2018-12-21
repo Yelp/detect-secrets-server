@@ -19,6 +19,14 @@ class ScanOptions(CommonOptions):
                 '(that you would `git clone`).'
             ),
         )
+        self.parser.add_argument(
+            '--dry-run',
+            action='store_true',
+            help=(
+                'Scan the repository with specified plugin configuration, without '
+                'saving state.'
+            ),
+        )
 
         return self
 

@@ -1,5 +1,5 @@
 """
- This is a collection of utility functions for easier, DRY testing.
+This is a collection of utility functions for easier, DRY testing.
 """
 from collections import namedtuple
 from contextlib import contextmanager
@@ -60,10 +60,9 @@ def mock_git_calls(*cases):
 
     # mock_subprocess is needed for `clone_repo_to_location`.
     with mock.patch(
-            'detect_secrets_server.storage.core.git._git'
-    ) as mock_git, \
-        mock.patch(
-            'detect_secrets_server.storage.core.git.subprocess.check_output'
+        'detect_secrets_server.storage.core.git._git'
+    ) as mock_git, mock.patch(
+        'detect_secrets_server.storage.core.git.subprocess.check_output'
     ) as mock_subprocess:
         mock_git.side_effect = _mock_single_git_call
         mock_subprocess.side_effect = _mock_subprocess_git_call
