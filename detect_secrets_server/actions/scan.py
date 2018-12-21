@@ -23,6 +23,7 @@ def scan_repo(args):
             s3_config=getattr(args, 's3_config', None),
         )
     except FileNotFoundError:
+        log.error('Unable to find repo: %s', args.repo)
         return 1
 
     secrets = repo.scan()

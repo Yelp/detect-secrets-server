@@ -8,5 +8,9 @@ class LocalTrackedRepo(BaseTrackedRepo):
 
     STORAGE_CLASS = FileStorageWithLocalGit
 
+    @property
+    def name(self):
+        return self.repo
+
     def cron(self):
         return "%s %s" % (super(LocalTrackedRepo, self).cron(), '--local')

@@ -1,6 +1,7 @@
 import argparse
 import os
 
+from detect_secrets.core.log import log
 from detect_secrets.core.usage import PluginOptions
 
 from .common.options import CommonOptions
@@ -100,6 +101,7 @@ class AddOptions(CommonOptions):
             _consolidate_config_file_plugin_options(args)
         elif args.local:
             is_valid_file(args.repo)
+            args.repo = os.path.abspath(args.repo)
         else:
             is_git_url(args.repo)
 
@@ -152,9 +154,15 @@ def _consolidate_config_file_plugin_options(args):
         if specified_values:
             cli_options[plugin.classname] = specified_values
 
+    repos = []
+
     # Apply it to all tracked repos
     for tracked_repo in args.repo:
+        if _should_discard_tracked_repo_in_config(tracked_repo):
+            continue
+
         if 'plugins' not in tracked_repo:
+            repos.append(tracked_repo)
             continue
 
         # Remove unknown plugins
@@ -181,3 +189,23 @@ def _consolidate_config_file_plugin_options(args):
         for disabled_plugin in disabled_plugins:
             if disabled_plugin in tracked_repo['plugins']:
                 del tracked_repo['plugins'][disabled_plugin]
+
+        repos.append(tracked_repo)
+
+    args.repo = repos
+
+
+def _should_discard_tracked_repo_in_config(tracked_repo):
+    # TODO: Test
+    try:
+        if tracked_repo.get('is_local_repo', False):
+            is_valid_file(tracked_repo['repo'])
+        else:
+            is_git_url(tracked_repo['repo'])
+
+        return False
+    except argparse.ArgumentTypeError as e:
+        # We log the error, rather than hard failing, because we don't want
+        # to hard fail if one out of many repositories are bad.
+        log.error(str(e))
+        return True

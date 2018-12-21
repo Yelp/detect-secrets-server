@@ -1,4 +1,5 @@
 import argparse
+import os
 import textwrap
 from abc import ABCMeta
 from importlib import import_module
@@ -106,7 +107,9 @@ class CommonOptions(object):
                 args.output_config,
             )
 
-        args.root_dir = args.root_dir[0]
+        args.root_dir = os.path.abspath(
+            os.path.expanduser(args.root_dir[0])
+        )
 
         s3.S3Options.consolidate_args(args)
 

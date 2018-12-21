@@ -88,7 +88,8 @@ class BaseTrackedRepo(object):
         The meta tracked file is in the format of self.__dict__
 
         :type repo_name: string
-        :param repo_name: git URL or local path of repo
+        :param repo_name: If the git URL is `git@github.com:yelp/detect-secrets`
+            this value will be `yelp/detect-secrets`
 
         :rtype: TrackedRepo
         :raises: FileNotFoundError

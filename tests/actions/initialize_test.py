@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import json
+import os
 from contextlib import contextmanager
 
 import mock
@@ -326,7 +327,7 @@ class TestAddRepo(object):
             args = self.parse_args('add {} --root-dir {}'.format(repo, mock_rootdir))
             add_repo(args)
 
-    def test_add_local_repo(self, mock_file_operations):
+    def test_add_local_repo(self, mock_file_operations, mock_rootdir):
         # This just needs to exist; no actual operations will be done to this.
         repo = 'examples'
 
@@ -346,8 +347,9 @@ class TestAddRepo(object):
 
         with mock_git_calls(*git_calls):
             args = self.parse_args(
-                'add {} --baseline .secrets.baseline --local'.format(
+                'add {} --baseline .secrets.baseline --local --root-dir {}'.format(
                     repo,
+                    mock_rootdir,
                 )
             )
 
@@ -356,7 +358,12 @@ class TestAddRepo(object):
         mock_file_operations.write.assert_called_with(
             json.dumps({
                 'sha': 'mocked_sha',
-                'repo': 'examples',
+                'repo': os.path.abspath(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        '../../examples',
+                    ),
+                ),
                 'plugins': {
                     'HexHighEntropyString': {
                         'hex_limit': 3,

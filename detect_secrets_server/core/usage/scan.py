@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from .common.options import CommonOptions
 from .common.validators import is_valid_file
@@ -35,3 +36,4 @@ class ScanOptions(CommonOptions):
         args.repo = args.repo[0]
         if args.local:
             is_valid_file(args.repo)
+            args.repo = os.path.abspath(args.repo)

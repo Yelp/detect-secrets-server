@@ -43,7 +43,8 @@ def initialize(args):
             exclude_regex=repo['exclude_regex'],
 
             is_local=repo.get('is_local_repo', False),
-            s3_config=getattr(args, 's3_config', None) if repo.get('s3_backend', False) else None,
+            s3_config=getattr(args, 's3_config', None)
+            if repo.get('storage', 'file') == 's3' else None,
 
             rootdir=args.root_dir,
         )
