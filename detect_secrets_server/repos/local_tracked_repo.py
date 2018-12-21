@@ -11,6 +11,3 @@ class LocalTrackedRepo(BaseTrackedRepo):
     @property
     def name(self):
         return self.repo
-
-    def cron(self):
-        return "%s %s" % (super(LocalTrackedRepo, self).cron(), '--local')

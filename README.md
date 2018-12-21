@@ -30,7 +30,8 @@ $ detect-secrets-server add git@github.com:yelp/detect-secrets
 $ detect-secrets-server install cron
 ```
 
-This will add `detect-secrets` as a tracked repository, TODO
+This will add `detect-secrets` as a tracked repository, and install it to the
+current user's crontab so that it will periodically scan for updates.
 
 ### Manually Scanning a Repository
 
@@ -86,6 +87,40 @@ Tracked repository options are as follows:
 Be sure to check out `examples/repos.yaml` for an reference.
 
 ## Configuration Options
+
+### Plugins Options
+
+There are several ways to manage the various `detect-secrets` plugins for your
+individual tracked repositories.
+
+By default, all repositories will inherit the default values as prescribed by
+`detect-secrets`. These can be overridden with the same CLI flags as you would
+for `detect-secrets` (e.g. `--hex-limit 5`, `--no-private-key-scan`).
+
+If you choose to use a config file to add multiple repositories at once, you can
+specify all the plugins' options that you want to customize under the `plugins`
+key. Each key is the **name** of the plugin, and its values are the keyword
+arguments that it accepts.
+
+Note that any plugin not explicitly mentioned will use default values. If you
+explicitly want to disable a given plugin for a given repository, simply set its
+value to `False`.
+
+For example, in `examples/repos.yaml`, we have the following plugin configuration:
+
+```
+plugins:
+    Base64HighEntropyString:
+        base64_limit: 4
+    PrivateKeyDetector: False
+```
+
+This will initialize plugins as follows:
+
+* Base64HighEntropyString: 4    (explicitly set)
+* BasicAuthDetector: enabled    (enabled by default)
+* HexHighEntropyString: 3       (default limits)
+* PrivateKeyDetector: disabled  (explicitly disabled)
 
 ### Storage Options
 

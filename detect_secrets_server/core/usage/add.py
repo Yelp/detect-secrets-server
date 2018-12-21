@@ -189,11 +189,8 @@ def _consolidate_config_file_plugin_options(args):
         for plugin_name in list(unknown_plugins):
             del tracked_repo['plugins'][plugin_name]
 
+        # CLI overrides
         for plugin_classname, values in cli_options.items():
-            if plugin_classname not in known_plugins:
-                del cli_options[plugin_classname]
-                continue
-
             if plugin_classname not in tracked_repo['plugins']:
                 tracked_repo['plugins'][plugin_classname] = {}
 
@@ -202,6 +199,7 @@ def _consolidate_config_file_plugin_options(args):
 
         # Apply disabled plugins after setting them, to avoid strange use case
         # where user sets both the disable flag, and the custom value flag.
+        # This menas that disabled plugins carry more weight than custom values.
         for disabled_plugin in disabled_plugins:
             if disabled_plugin in tracked_repo['plugins']:
                 del tracked_repo['plugins'][disabled_plugin]

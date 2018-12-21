@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import json
 from contextlib import contextmanager
 
 import mock
@@ -9,6 +8,7 @@ import pytest
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.s3_tracked_repo import S3LocalTrackedRepo
 from detect_secrets_server.repos.s3_tracked_repo import S3TrackedRepo
+from testing.factories import metadata_factory
 
 
 class TestS3TrackedRepo(object):
@@ -27,16 +27,6 @@ class TestS3TrackedRepo(object):
                     mock_rootdir,
                     filename,
                 ),
-            )
-
-    def test_cron(self, mock_logic):
-        with mock_logic() as (client, repo):
-            assert repo.cron() == (
-                '1 2 3 4 5    detect-secrets-server '
-                'scan yelp/detect-secrets '
-                '--s3-credentials-file examples/aws_credentials.json '
-                '--s3-bucket pail '
-                '--s3-prefix prefix'
             )
 
     @pytest.mark.parametrize(
@@ -87,26 +77,6 @@ class TestS3TrackedRepo(object):
             assert client.upload_file.called is should_upload
 
 
-class TestS3LocalTrackedRepo(object):
-
-    def test_cron(self, mock_logic):
-        with mock_logic(is_local=True) as (
-            client,
-            repo
-        ):
-            assert repo.cron() == (
-                '1 2 3 4 5    detect-secrets-server '
-
-                # Since this is local, the scan key is the exact repo name
-                'scan git@github.com:yelp/detect-secrets '
-
-                '--local '
-                '--s3-credentials-file examples/aws_credentials.json '
-                '--s3-bucket pail '
-                '--s3-prefix prefix'
-            )
-
-
 def mock_s3_config():
     return {
         'prefix': 'prefix',
@@ -118,16 +88,19 @@ def mock_s3_config():
 
 
 @pytest.fixture
-def mock_logic(mocked_boto, mock_tracked_repo_data, mock_rootdir):
+def mock_logic(mocked_boto, mock_rootdir):
     @contextmanager
     def wrapped(is_local=False):
         klass = S3LocalTrackedRepo if is_local else S3TrackedRepo
 
         with mock.patch(
             'detect_secrets_server.storage.file.open',
-            mock.mock_open(read_data=json.dumps(
-                mock_tracked_repo_data,
-            )),
+            mock.mock_open(
+                read_data=metadata_factory(
+                    'git@github.com:yelp/detect-secrets',
+                    json=True,
+                ),
+            )
         ), mock.patch(
             'detect_secrets_server.storage.file.os.path.isdir',
             return_value=True,

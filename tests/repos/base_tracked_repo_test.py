@@ -9,16 +9,26 @@ import pytest
 from detect_secrets_server.repos.base_tracked_repo import BaseTrackedRepo
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.storage.file import FileStorage
+from testing.factories import metadata_factory
 from testing.mocks import mock_git_calls
 from testing.mocks import SubprocessMock
 
 
 class TestLoadFromFile(object):
 
-    def test_success(self, mock_logic, mock_tracked_repo_data, mock_rootdir):
-        mock_open = mock.mock_open(read_data=json.dumps(
-            mock_tracked_repo_data,
-        ))
+    def test_success(self, mock_logic, mock_rootdir):
+        mock_open = mock.mock_open(
+            read_data=metadata_factory(
+                'git@github.com:yelp/detect-secrets',
+                baseline_filename='foobar',
+                plugins={
+                    'HexHighEntropyString': {
+                        'hex_limit': 3.5,
+                    },
+                },
+                json=True,
+            ),
+        )
 
         repo = mock_logic(mock_open)
 
@@ -31,14 +41,14 @@ class TestLoadFromFile(object):
 
         assert repo.last_commit_hash == 'sha256-hash'
         assert repo.repo == 'git@github.com:yelp/detect-secrets'
-        assert repo.crontab == '1 2 3 4 5'
+        assert repo.crontab == '0 0 * * *'
         assert repo.plugin_config == {
             'HexHighEntropyString': {
                 'hex_limit': 3.5,
             },
         }
         assert repo.baseline_filename == 'foobar'
-        assert repo.exclude_regex == ''
+        assert not repo.exclude_regex
         assert isinstance(repo.storage, FileStorage)
 
     def test_no_file_found(self, mock_rootdir):
@@ -47,16 +57,6 @@ class TestLoadFromFile(object):
                 'does_not_exist',
                 mock_rootdir,
             )
-
-
-class TestCron(object):
-
-    def test_success(self, mock_logic):
-        repo = mock_logic()
-        assert repo.cron() == (
-            '1 2 3 4 5    detect-secrets-server '
-            'scan yelp/detect-secrets'
-        )
 
 
 class TestScan(object):
@@ -213,13 +213,12 @@ class TestSave(object):
         is_file,
         mocked_input,
         mock_logic,
-        mock_tracked_repo_data,
         mock_rootdir,
     ):
         with self.setup_env(mock_logic, is_file, mocked_input) as (repo, mock_open):
             assert repo.save(override_level)
 
-            self.assert_writes_accurately(mock_open, mock_tracked_repo_data, mock_rootdir)
+            assert_writes_accurately(mock_open, mock_rootdir)
 
     @pytest.mark.parametrize(
         'override_level,is_file,mocked_input',
@@ -256,31 +255,26 @@ class TestSave(object):
         ):
             yield repo, mock_open
 
-    def assert_writes_accurately(self, mock_open, mock_tracked_repo_data, mock_rootdir):
-        mock_open.assert_called_with(
-            '{}/tracked/{}.json'.format(
-                mock_rootdir,
-                FileStorage.hash_filename('yelp/detect-secrets'),
-            ),
-            'w',
-        )
-        mocked_data = mock_tracked_repo_data
-        # TODO: Need to support explicitly disabled plugins
-        # mocked_data['plugins'].update({
-        # 'Base64HighEntropyString': False,
-        # 'PrivateKeyDetector': False,
-        # })
-        mock_open().write.assert_called_with(
-            json.dumps(
-                mocked_data,
-                indent=2,
-                sort_keys=True,
-            )
-        )
+
+def assert_writes_accurately(mock_open, mock_rootdir):
+    mock_open.assert_called_with(
+        '{}/tracked/{}.json'.format(
+            mock_rootdir,
+            FileStorage.hash_filename('yelp/detect-secrets'),
+        ),
+        'w',
+    )
+    mock_open().write.assert_called_with(
+        metadata_factory(
+            'git@github.com:yelp/detect-secrets',
+            baseline_filename='foobar',
+            json=True,
+        ),
+    )
 
 
 @pytest.fixture
-def mock_logic(mock_tracked_repo_data, mock_rootdir):
+def mock_logic(mock_rootdir):
     def wrapped(mock_open=None):
         """
         :type mock_open: mock.mock_open
@@ -288,9 +282,13 @@ def mock_logic(mock_tracked_repo_data, mock_rootdir):
             so can do assertions outside this function.
         """
         if not mock_open:
-            mock_open = mock.mock_open(read_data=json.dumps(
-                mock_tracked_repo_data,
-            ))
+            mock_open = mock.mock_open(
+                read_data=metadata_factory(
+                    'git@github.com:yelp/detect-secrets',
+                    baseline_filename='foobar',
+                    json=True,
+                ),
+            )
 
         with mock.patch(
             'detect_secrets_server.storage.file.open',

@@ -90,5 +90,13 @@ def apply_default_plugin_options_to_repos(args):
             if key not in tracked_repo['plugins']:
                 tracked_repo['plugins'][key] = value
 
+        disabled_plugins = [
+            plugin_name
+            for plugin_name, value in tracked_repo['plugins'].items()
+            if value is False
+        ]
+        for plugin_name in disabled_plugins:
+            del tracked_repo['plugins'][plugin_name]
+
         if 'sha' not in tracked_repo:
             tracked_repo['sha'] = ''

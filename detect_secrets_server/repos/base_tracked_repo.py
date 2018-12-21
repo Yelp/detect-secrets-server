@@ -111,13 +111,6 @@ class BaseTrackedRepo(object):
     def name(self):
         return self.storage.repository_name
 
-    def cron(self):
-        """Returns the cron command to be appended to crontab"""
-        return '%(crontab)s    detect-secrets-server scan %(name)s' % {
-            'crontab': self.crontab,
-            'name': self.name,
-        }
-
     def scan(self):
         """Clones the repo, and scans the git diff between last_commit_hash
         and HEAD.

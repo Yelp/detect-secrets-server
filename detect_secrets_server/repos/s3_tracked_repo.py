@@ -97,7 +97,8 @@ class S3TrackedRepo(BaseTrackedRepo):
 
         return output
 
-    def cron(self):
+    def cron(self):     # pragma: no cover
+        # TODO: deprecate this
         output = super(S3TrackedRepo, self).cron()
         return '{} --s3-credentials-file {} --s3-bucket {} --s3-prefix {}'.format(
             output,

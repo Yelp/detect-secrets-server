@@ -6,3 +6,4 @@ tracked:
       plugins:
         Base64HighEntropyString:
             base64_limit: 4
+        PrivateKeyDetector: False

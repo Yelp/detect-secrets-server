@@ -28,13 +28,25 @@ def metadata_factory(repo, json=False, **kwargs):
             "PrivateKeyDetector": {},
         },
         "repo": repo,
-        "sha": 'does_not_matter',
+        "sha": 'sha256-hash',
     }
 
     output.update(kwargs)
 
     if json:
         return json_module.dumps(output, indent=2, sort_keys=True)
+    return output
+
+
+def single_repo_config_factory(repo, **kwargs):
+    """
+    This generates a layout used in passing config files when initializing repos.
+    """
+    output = {
+        'repo': repo,
+    }
+    output.update(kwargs)
+
     return output
 
 
