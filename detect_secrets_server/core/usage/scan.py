@@ -1,4 +1,3 @@
-import argparse
 import os
 
 from .common.options import CommonOptions
@@ -26,11 +25,6 @@ class ScanOptions(CommonOptions):
     @staticmethod
     def consolidate_args(args):
         """Validation and appropriate formatting of args.repo"""
-        if not args.output_hook:
-            raise argparse.ArgumentTypeError(
-                '--output-hook is required.',
-            )
-
         CommonOptions.consolidate_args(args)
 
         args.repo = args.repo[0]

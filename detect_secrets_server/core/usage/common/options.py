@@ -11,6 +11,7 @@ from .hooks import ALL_HOOKS
 from .hooks import HookDescriptor
 from .validators import is_valid_file
 from detect_secrets_server.hooks.external import ExternalHook
+from detect_secrets_server.hooks.stdout import StdoutHook
 
 
 class CommonOptions(object):
@@ -132,7 +133,7 @@ def _initialize_output_hook_and_raw_command(hook_name, config_filename):
         if hook_name:
             return ExternalHook(hook_name), command
 
-        return None, ''
+        return StdoutHook(), ''
 
     if hook_found.config_setting == HookDescriptor.CONFIG_REQUIRED and \
             not config_filename:
