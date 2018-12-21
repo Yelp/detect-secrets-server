@@ -10,8 +10,9 @@ bypassed.
 
 Adding a
 [pre-receive hook](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks#_code_pre_receive_code)
-would also fail to be effective, due to the nuanced nature of `detect-secrets`. If you're preventing any potential secrets at a commit level, you may block developers due to false
-positives.
+would also fail to be effective, due to the nuanced nature of `detect-secrets`.
+If you're preventing any potential secrets at a commit level, you may block developers
+due to false positives.
 
 Therefore, `detect-secrets-server` accomplishes several things:
 
@@ -37,25 +38,7 @@ This will add `detect-secrets` as a tracked repository, TODO
 Once you have a tracked repository, you can scan it as follows:
 
 ```
-$ detect-secrets-server scan yelp/detect-secrets --output-hook examples/standalone_hook.py
-```
-
-Notice that the `--output-hook` allows you to specify an arbitrary file that reads
-from command line arguments. Using `examples/standalone_hook.py`, an example output would
-look like the following:
-
-```
-repo: yelp/detect-secrets
-{
-    "detect_secrets/pre_commit_hook.py": [
-        {
-            "author": "domanchi",
-            "hashed_secret": "7cec71eb6b597e71690378dfb169169a283f2e94",
-            "line_number": 1,
-            "type": "Hex High Entropy String"
-        }
-    ]
-}
+$ detect-secrets-server scan yelp/detect-secrets
 ```
 
 ### Adding a Local Repository
@@ -95,10 +78,11 @@ Tracked repository options are as follows:
 | repo           | git URL or local file path to clone (**required**).
 | crontab        | [crontab syntax](https://crontab.guru/) of how often to run a scan for this repo (**required**).
 | sha            | The commit hash to start scanning from. If not provided, will use HEAD.
-| is\_local\_repo| True/False depending on if the repo is already on the filesystem. Defaults to False.
-| baseline       | The filename to parse the detect-secrets baseline from.
-| plugins        | Individual repository plugin settings, to override default values.
 | storage        | Either one of the following: (`file`, `s3`). Determines where to store metadata. Defaults to `file`.
+| is\_local\_repo| True/False depending on if the repo is already on the filesystem. Defaults to False.
+| plugins        | Individual repository plugin settings, to override default values.
+| baseline       | The filename to parse the detect-secrets baseline from.
+| exclude\_regex | Per repo regex for excluding files from scan.
 
 Be sure to check out `examples/repos.yaml` for an reference.
 
@@ -106,8 +90,9 @@ Be sure to check out `examples/repos.yaml` for an reference.
 
 ### Storage Options
 
-You are able to configure `detect-secrets-server` to use a variety of different storage
-options for the metadata it keeps. These include:
+`detect-secrets-server` stores state through metadata it keeps for the repositories
+it tracks. You can configure a variety of different storage options for this using
+the `--storage` option, including:
 
 #### file
 
@@ -157,7 +142,22 @@ when it detects a secret. These include:
 #### Adhoc Script
 
 When you specify an executable file with `--output-hook`, this file will run upon secret
-detection. See [Adding a Local Repository](TODO) for more details.
+detection. Using `examples/standalone_hook.py` as an example, the output would look
+something like:
+
+```
+repo: yelp/detect-secrets
+{
+    "detect_secrets/pre_commit_hook.py": [
+        {
+            "author": "aaronloo",
+            "hashed_secret": "7cec71eb6b597e71690378dfb169169a283f2e94",
+            "line_number": 1,
+            "type": "Hex High Entropy String"
+        }
+    ]
+}
+```
 
 #### pysensu
 

@@ -23,11 +23,16 @@ setup(
     ],
     install_requires=[
         'detect-secrets',
-        'enum34',
-        'future',
         'pyyaml',
         'unidiff',
     ],
+    extra_requires={
+        ':python_version=="2.7"': [
+            'future',
+            'enum34',
+            'functools32',
+        ],
+    },
     entry_points={
         'console_scripts': [
             'detect-secrets-server = detect_secrets_server.__main__:main',

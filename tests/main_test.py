@@ -4,36 +4,37 @@ import mock
 import pytest
 
 from detect_secrets_server.__main__ import main
+from testing.util import cache_buster
 
 
 class TestMain(object):
 
+    def teardown(self):
+        cache_buster()
+
     def test_no_args(self):
-        with pytest.raises(SystemExit):
-            main([])
+        assert main([]) == 0
 
     @pytest.mark.parametrize(
         'argument_string,action_executed',
         [
             (
                 'add examples/repos.yaml --config '
-                '--output-hook pysensu '
-                '--output-config examples/pysensu.config.yaml '
+                '--storage s3 '
                 '--s3-config examples/s3.yaml',
                 'initialize',
             ),
-            # (
-            # 'add git@github.com:yelp/detect-secrets '
-            # '--s3-credentials-file examples/aws_credentials.json '
-            # '--s3-bucket pail',
-            # 'add_repo',
-            # ),
-            # (
-            # 'scan yelp/detect-secrets '
-            # '--output-hook examples/standalone_hook.py '
-            # '--s3-config examples/s3.yaml',
-            # 'scan_repo',
-            # ),
+            (
+                'add git@github.com:yelp/detect-secrets '
+                '--s3-credentials-file examples/aws_credentials.json '
+                '--s3-bucket pail '
+                '--storage s3',
+                'add_repo',
+            ),
+            (
+                'scan yelp/detect-secrets',
+                'scan_repo',
+            ),
         ]
     )
     def test_actions(self, argument_string, action_executed):
@@ -45,6 +46,9 @@ class TestMain(object):
             autospec=True,
         ) as mock_actions, mock.patch(
             'detect_secrets_server.core.usage.s3.should_enable_s3_options',
+            return_value=True,
+        ), mock.patch(
+            'detect_secrets_server.core.usage.common.storage.should_enable_s3_options',
             return_value=True,
         ):
             mock_actions.initialize.return_value = ''

@@ -9,6 +9,7 @@ from detect_secrets.core.usage import PluginOptions
 from .. import s3
 from .hooks import ALL_HOOKS
 from .hooks import HookDescriptor
+from .storage import get_storage_options
 from .validators import is_valid_file
 from detect_secrets_server.hooks.external import ExternalHook
 from detect_secrets_server.hooks.stdout import StdoutHook
@@ -35,6 +36,16 @@ class CommonOptions(object):
             help=(
                 'Indicates that the repo argument is a locally stored '
                 'repository (rather than a git URL to be cloned).'
+            ),
+        )
+
+        self.parser.add_argument(
+            '-s',
+            '--storage',
+            choices=get_storage_options(),
+            default='file',
+            help=(
+                'Determines the datastore to use for storing metadata.'
             ),
         )
 

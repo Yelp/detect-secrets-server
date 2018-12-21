@@ -9,8 +9,6 @@ import pytest
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.s3_tracked_repo import S3LocalTrackedRepo
 from detect_secrets_server.repos.s3_tracked_repo import S3TrackedRepo
-from testing.mocks import mock_git_calls
-from testing.mocks import SubprocessMock
 
 
 class TestS3TrackedRepo(object):
@@ -55,11 +53,11 @@ class TestS3TrackedRepo(object):
         ]
     )
     def test_save(
-            self,
-            mock_logic,
-            is_file_uploaded,
-            override_level,
-            should_upload
+        self,
+        mock_logic,
+        is_file_uploaded,
+        override_level,
+        should_upload
     ):
         with mock_logic() as (client, repo):
             filename = 'prefix/{}.json'.format(
@@ -95,15 +93,13 @@ class TestS3LocalTrackedRepo(object):
         with mock_logic(is_local=True) as (
             client,
             repo
-        ), mock_git_calls(
-            SubprocessMock(
-                expected_input='git remote get-url origin',
-                mocked_output='git@github.com:yelp/detect-secrets',
-            ),
         ):
             assert repo.cron() == (
                 '1 2 3 4 5    detect-secrets-server '
-                'scan yelp/detect-secrets '
+
+                # Since this is local, the scan key is the exact repo name
+                'scan git@github.com:yelp/detect-secrets '
+
                 '--local '
                 '--s3-credentials-file examples/aws_credentials.json '
                 '--s3-bucket pail '

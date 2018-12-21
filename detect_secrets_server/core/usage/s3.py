@@ -1,14 +1,7 @@
 import argparse
 
+from .common.storage import should_enable_s3_options
 from .common.validators import config_file
-
-
-def should_enable_s3_options():
-    try:
-        import boto3    # noqa: F401
-        return True
-    except ImportError:
-        return False
 
 
 class S3Options(object):
@@ -64,7 +57,7 @@ class S3Options(object):
 
     @staticmethod
     def consolidate_args(args):
-        if not should_enable_s3_options():
+        if not _needs_s3_config(args):
             return
 
         args.s3_config = args.s3_config[0]
@@ -107,3 +100,15 @@ class S3Options(object):
             'access_key': creds['accessKeyId'],
             'secret_access_key': creds['secretAccessKey'],
         }
+
+
+def _needs_s3_config(args):
+    if args.storage == 's3':
+        return True
+
+    if args.action == 'add' and args.config:
+        for repo in args.repo:
+            if repo.get('storage') == 's3':
+                return True
+
+    return False

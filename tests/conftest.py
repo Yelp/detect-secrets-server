@@ -31,5 +31,11 @@ def mocked_boto():
     with mock.patch(
         'detect_secrets_server.storage.s3.S3Storage._get_boto3',
         return_value=mock_client,
+    ), mock.patch(
+        'detect_secrets_server.core.usage.common.storage.should_enable_s3_options',
+        return_value=True,
+    ), mock.patch(
+        'detect_secrets_server.core.usage.s3.should_enable_s3_options',
+        return_value=True,
     ):
         yield mock_client.client()

@@ -10,7 +10,7 @@ class TestS3Options(UsageTest):
     def parse_args(self, argument_string='', has_boto=True):
         # This test suite uses `scan` to test, because the API is a lot simpler.
         argument_string = '{} {} {}'.format(
-            'scan --output-hook examples/standalone_hook.py ',
+            'scan --output-hook examples/standalone_hook.py --storage s3',
             argument_string,
             'examples -L',
         )

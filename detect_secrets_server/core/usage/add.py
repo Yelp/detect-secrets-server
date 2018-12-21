@@ -83,13 +83,6 @@ class AddOptions(CommonOptions):
                 'Can\'t use --config with --local.',
             )
 
-        # if args.config and not args.output_hook:
-            # raise argparse.ArgumentTypeError(
-            # 'Must specify --output-hook with --config.',
-            # )
-
-        CommonOptions.consolidate_args(args)
-
         if args.config:
             try:
                 args.repo = config_file(args.repo)['tracked']
@@ -107,10 +100,12 @@ class AddOptions(CommonOptions):
 
         _consolidate_initialize_args(args)
 
+        # This needs to be run *after* args.repo is consolidated, so S3Options
+        # can work properly.
+        CommonOptions.consolidate_args(args)
+
 
 def _consolidate_initialize_args(args):
-    args.root_dir = os.path.abspath(os.path.expanduser(args.root_dir))
-
     if args.baseline:
         args.baseline = args.baseline[0]
 
@@ -196,7 +191,6 @@ def _consolidate_config_file_plugin_options(args):
 
 
 def _should_discard_tracked_repo_in_config(tracked_repo):
-    # TODO: Test
     try:
         if tracked_repo.get('is_local_repo', False):
             is_valid_file(tracked_repo['repo'])

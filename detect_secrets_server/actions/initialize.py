@@ -21,7 +21,7 @@ def add_repo(args):
         exclude_regex=args.exclude_regex,
 
         is_local=args.local,
-        s3_config=getattr(args, 's3_config', None),
+        s3_config=args.s3_config if args.storage == 's3' else None,
     )
 
     _clone_and_save_repo(repo)
@@ -36,15 +36,14 @@ def initialize(args):
     tracked_repos = [
         _create_single_tracked_repo(
             repo=repo['repo'],
-            sha=repo['sha'],
             crontab=repo['crontab'],
+            sha=repo['sha'],
             plugins=repo['plugins'],
             baseline_filename=repo['baseline'],
             exclude_regex=repo['exclude_regex'],
 
             is_local=repo.get('is_local_repo', False),
-            s3_config=getattr(args, 's3_config', None)
-            if repo.get('storage', 'file') == 's3' else None,
+            s3_config=args.s3_config if repo['storage'] == 's3' else None,
 
             rootdir=args.root_dir,
         )

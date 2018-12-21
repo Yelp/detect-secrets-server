@@ -107,6 +107,7 @@ class TestAddOptions(UsageTest):
         mock_config_file = {
             'tracked': [
                 {
+                    'repo': 'git@github.com:yelp/detect-secrets',
                     'plugins': {
                         'blah': {
                             'arg_name': 1,
@@ -122,3 +123,28 @@ class TestAddOptions(UsageTest):
             args = self.parse_args('add will_be_mocked --config')
 
         assert 'blah' not in args.repo[0]['plugins']
+
+    @pytest.mark.parametrize(
+        'repo',
+        (
+            {
+                'repo': 'non_existent_file',
+                'crontab': '* * 4 * *',
+                'is_local_repo': True,
+            },
+            {
+                'repo': 'examples',
+                'crontab': '* * 4 * *',
+            },
+        ),
+    )
+    def test_config_file_unknown_repos_are_discarded(self, repo):
+        with mock.patch(
+            'detect_secrets_server.core.usage.add.config_file',
+            return_value={
+                'tracked': [repo],
+            },
+        ):
+            args = self.parse_args('add will_be_mocked --config')
+
+        assert not args.repo

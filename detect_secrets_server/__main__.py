@@ -22,7 +22,7 @@ def main(argv=None):
 
     :return: shell error code
     """
-    if not argv:
+    if argv is None:
         argv = sys.argv[1:]
 
     if len(argv) == 1:  # pragma: no cover

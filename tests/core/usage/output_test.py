@@ -1,9 +1,11 @@
 from __future__ import absolute_import
 
+import mock
 import pytest
 
+from detect_secrets_server.core.usage.common.hooks import HookDescriptor
 from detect_secrets_server.hooks.external import ExternalHook
-from detect_secrets_server.hooks.pysensu_yelp import PySensuYelpHook
+from detect_secrets_server.hooks.stdout import StdoutHook
 from testing.base_usage_test import UsageTest
 
 
@@ -31,26 +33,43 @@ class TestOutputOptions(UsageTest):
         with pytest.raises(SystemExit):
             self.parse_args('scan --output-hook {} examples -L'.format(hook_input))
 
-    @pytest.mark.parametrize(
-        'hook_input,instance_type',
-        [
-            (
-                # For testing purposes, the exact config does not
-                # matter; it just needs to be yaml loadable.
-                'pysensu --output-config examples/pysensu.config.yaml',
-                PySensuYelpHook,
-            ),
-            (
-                'examples/standalone_hook.py',
-                ExternalHook,
-            ),
-        ]
-    )
-    def test_valid_output_hook(self, hook_input, instance_type):
-        args = self.parse_args('scan --output-hook {} examples -L'.format(hook_input))
-        assert isinstance(args.output_hook, instance_type)
+    def test_valid_external_hook(self):
+        args = self.parse_args(
+            'scan --output-hook examples/standalone_hook.py examples -L',
+        )
+        assert isinstance(args.output_hook, ExternalHook)
+
+    def test_valid_hook_with_config_file(self):
+        """
+        We don't want test cases to require extra dependencies, only to test
+        whether they are compatible. Therefore, we mock ALL_HOOKS with the
+        `ExternalHook` as a stand-in replacement for a hook that requires
+        a config file.
+        """
+        with mock.patch(
+            'detect_secrets_server.core.usage.common.options.ALL_HOOKS',
+            [
+                HookDescriptor(
+                    display_name='config_needed',
+                    module_name='detect_secrets_server.hooks.external',
+                    class_name='ExternalHook',
+                    config_setting=HookDescriptor.CONFIG_REQUIRED,
+                ),
+            ],
+        ):
+            args = self.parse_args(
+                'scan '
+                '--output-hook config_needed '
+                '--output-config examples/pysensu.config.yaml '
+                'examples '
+            )
+
+        with open('examples/pysensu.config.yaml') as f:
+            content = f.read()
+
+        assert args.output_hook.filename == content
 
     def test_no_hook_provided(self):
         args = self.parse_args('add git@git.github.com:Yelp/detect-secrets')
-        assert not args.output_hook
+        assert isinstance(args.output_hook, StdoutHook)
         assert args.output_hook_command == ''

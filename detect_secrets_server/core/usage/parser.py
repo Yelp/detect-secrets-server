@@ -71,6 +71,14 @@ def apply_default_plugin_options_to_repos(args):
     This applies default values to the config file, if appropriate.
     """
     for tracked_repo in args.repo:
+        for key in (
+            'baseline',
+            'exclude_regex',
+            'storage',
+        ):
+            if key not in tracked_repo:
+                tracked_repo[key] = getattr(args, key)
+
         if 'plugins' not in tracked_repo:
             tracked_repo['plugins'] = {}
 
@@ -78,8 +86,5 @@ def apply_default_plugin_options_to_repos(args):
             if key not in tracked_repo['plugins']:
                 tracked_repo['plugins'][key] = value
 
-        if 'baseline' not in tracked_repo:
-            tracked_repo['baseline'] = args.baseline
-
-        if 'exclude_regex' not in tracked_repo:
-            tracked_repo['exclude_regex'] = args.exclude_regex
+        if 'sha' not in tracked_repo:
+            tracked_repo['sha'] = ''
