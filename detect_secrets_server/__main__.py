@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-from __future__ import print_function
 
 import sys
 
@@ -14,14 +13,6 @@ def parse_args(argv):
 
 
 def main(argv=None):
-    """
-    Expected Usage:
-      1. Initialize TrackedRepos, and save to crontab.
-      2. Each cron command will run and scan git diff from previous commit saved, to now.
-      3. If something is found, alert.
-
-    :return: shell error code
-    """
     if argv is None:    # pragma: no cover
         argv = sys.argv[1:]
 
