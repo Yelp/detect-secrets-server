@@ -2,6 +2,7 @@ import argparse
 
 from .common.storage import should_enable_s3_options
 from .common.validators import config_file
+from .common.validators import json_file
 
 
 class S3Options(object):
@@ -93,7 +94,7 @@ class S3Options(object):
             prefix = args.s3_prefix[0]
             creds_filename = args.s3_credentials_file[0]
 
-        creds = config_file(creds_filename)
+        creds = json_file(creds_filename)
 
         # We don't need this anymore.
         del args.s3_bucket

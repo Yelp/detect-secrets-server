@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 
 import yaml
@@ -30,3 +31,10 @@ def config_file(path):
 
     with open(path) as f:
         return yaml.safe_load(f.read())
+
+
+def json_file(path):
+    is_valid_file(path)
+
+    with open(path) as f:
+        return json.load(f)
