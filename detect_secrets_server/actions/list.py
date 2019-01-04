@@ -1,7 +1,14 @@
 from __future__ import absolute_import
+from __future__ import print_function
 
 from detect_secrets_server.storage.file import FileStorageWithLocalGit
 from detect_secrets_server.storage.s3 import S3Storage
+
+
+def display_tracked_repositories(args):
+    for repo, is_local in list_tracked_repositories(args):
+        if args.local == is_local:
+            print(repo['repo'])
 
 
 def list_tracked_repositories(args):
@@ -12,4 +19,4 @@ def list_tracked_repositories(args):
         'file': FileStorageWithLocalGit,
     }
 
-    return list(mapping[args.storage](args.root_dir).get_tracked_repositories())
+    return mapping[args.storage](args.root_dir).get_tracked_repositories()
