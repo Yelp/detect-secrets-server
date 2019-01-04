@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from collections import namedtuple
+
 import mock
 import pytest
 
@@ -42,20 +44,24 @@ class TestOutputOptions(UsageTest):
     def test_valid_hook_with_config_file(self):
         """
         We don't want test cases to require extra dependencies, only to test
-        whether they are compatible. Therefore, we mock ALL_HOOKS with the
-        `ExternalHook` as a stand-in replacement for a hook that requires
-        a config file.
+        whether they are compatible. Therefore, we mock ALL_HOOKS with a
+        stand-in replacement for a hook that requires a config file.
         """
         with mock.patch(
             'detect_secrets_server.core.usage.common.output.ALL_HOOKS',
             [
                 HookDescriptor(
                     display_name='config_needed',
-                    module_name='detect_secrets_server.hooks.external',
-                    class_name='ExternalHook',
+                    module_name='will_be_mocked',
+                    class_name='ConfigFileRequiredHook',
                     config_setting=HookDescriptor.CONFIG_REQUIRED,
                 ),
             ],
+        ), mock.patch(
+            'detect_secrets_server.core.usage.common.output.import_module',
+            return_value=Module(
+                ConfigFileRequiredHook=ConfigFileRequiredMockClass,
+            ),
         ):
             args = self.parse_args(
                 'scan '
@@ -67,9 +73,22 @@ class TestOutputOptions(UsageTest):
         with open('examples/pysensu.config.yaml') as f:
             content = f.read()
 
-        assert args.output_hook.filename == content
+        assert args.output_hook.config == content
 
     def test_no_hook_provided(self):
         args = self.parse_args('scan git@git.github.com:Yelp/detect-secrets')
         assert isinstance(args.output_hook, StdoutHook)
         assert args.output_hook_command == ''
+
+
+Module = namedtuple(
+    'Module',
+    [
+        'ConfigFileRequiredHook',
+    ]
+)
+
+
+class ConfigFileRequiredMockClass(object):
+    def __init__(self, config):
+        self.config = config

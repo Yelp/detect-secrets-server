@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 import detect_secrets_server
@@ -9,4 +11,9 @@ def test_version(capsys):
         ServerParserBuilder().parse_args(['--version'])
 
     assert str(e.value) == '0'
-    assert capsys.readouterr().out.strip() == detect_secrets_server.__version__
+
+    # Oh, the joys of writing compatible code
+    if sys.version_info[0] < 3:     # pragma: no cover
+        assert capsys.readouterr().err.strip() == detect_secrets_server.__version__
+    else:
+        assert capsys.readouterr().out.strip() == detect_secrets_server.__version__

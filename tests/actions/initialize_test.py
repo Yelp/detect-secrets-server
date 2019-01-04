@@ -112,7 +112,7 @@ class TestInitialize(object):
         with mock_repos_config({
             'tracked': [
                 single_repo_config_factory(
-                    **data,
+                    **data
                 ),
             ]
         }):

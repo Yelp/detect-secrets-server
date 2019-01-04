@@ -13,16 +13,6 @@ from testing.mocks import mock_git_calls
 from testing.mocks import SubprocessMock
 
 
-@pytest.fixture
-def base_storage(mock_rootdir):
-    return BaseStorage(mock_rootdir)
-
-
-@pytest.fixture
-def local_storage(mock_rootdir):
-    return LocalGitRepository(mock_rootdir)
-
-
 class TestBaseStorage(object):
 
     def test_setup_creates_directories(self, mock_rootdir, base_storage):
@@ -179,3 +169,27 @@ def assert_directories_created(directories_created=None):
             ))
         else:
             assert makedirs.called
+
+
+@pytest.fixture
+def base_storage(mock_rootdir):
+    return get_mocked_class(BaseStorage)(mock_rootdir)
+
+
+@pytest.fixture
+def local_storage(mock_rootdir):
+    return get_mocked_class(LocalGitRepository)(mock_rootdir)
+
+
+def get_mocked_class(class_object):
+    class MockStorage(class_object):
+        def get(self, key):
+            pass
+
+        def put(self, key, value):
+            pass
+
+        def get_tracked_repositories(self):
+            return ()
+
+    return MockStorage
