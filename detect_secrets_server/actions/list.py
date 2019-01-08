@@ -12,4 +12,8 @@ def list_tracked_repositories(args):
         'file': FileStorageWithLocalGit,
     }
 
-    return list(mapping[args.storage](args.root_dir).get_tracked_repositories())
+    return list(
+        mapping[args.storage](
+            args.root_dir
+        ).get_tracked_repositories()
+    )

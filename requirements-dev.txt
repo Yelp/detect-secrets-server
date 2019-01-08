@@ -1,6 +1,8 @@
 aspy.yaml==1.1.1
 atomicwrites==1.2.1
 attrs==18.2.0
+boto3
+botocore
 cached-property==1.5.1
 cfgv==1.1.0
 detect-secrets==0.11.0

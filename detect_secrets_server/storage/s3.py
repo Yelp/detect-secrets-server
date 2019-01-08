@@ -29,30 +29,52 @@ class S3Storage(FileStorage):
         self._initialize_client()
 
     def get(self, key):
-        """Downloads file from S3 into local storage."""
+        """Downloads file from S3 into local filesystem."""
         self.client.download_file(
-            self.bucket_name,
-            self.get_s3_tracked_file_location(key),
-            self.get_tracked_file_location(key),
+            Bucket=self.bucket_name,
+            Key=self.get_s3_tracked_file_location(key),
+            Filename=self.get_tracked_file_location(key),
         )
 
         return super(S3Storage, self).get(key)
 
     def get_tracked_repositories(self):
-        # TODO
-        pass
+        """
+        :rtype: (
+            return value of json.load (should be dict),
+            False for `is_local`,
+        )
+        """
+        paginator = self.client.get_paginator('list_objects')
+        for page in paginator.paginate(
+            Bucket=self.bucket_name,
+            Prefix=self.prefix,
+        ):
+            for obj in page['Contents']:
+                object_key = obj['Key']
+
+                # Skip anything that is not JSON
+                if not object_key.endswith('.json'):
+                    continue
+
+                yield self.get(object_key), False
 
     def upload(self, key, value):
         """This is different than `put`, to support situations where you
         may want to upload locally, but not to be sync'ed with the cloud.
         """
         self.client.upload_file(
-            self.get_tracked_file_location(key),
-            self.bucket_name,
-            self.get_s3_tracked_file_location(key),
+            Filename=self.get_tracked_file_location(key),
+            Bucket=self.bucket_name,
+            Key=self.get_s3_tracked_file_location(key),
         )
 
     def is_file_uploaded(self, key):
+        """Note: that we are using the filename as a prefix, so we will
+        never run into the 1000 object limit of `list_objects_v2`.
+
+        :rtype: bool
+        """
         filename = self.get_s3_tracked_file_location(key)
         response = self.client.list_objects_v2(
             Bucket=self.bucket_name,
@@ -61,7 +83,7 @@ class S3Storage(FileStorage):
 
         for obj in response.get('Contents', []):
             if obj['Key'] == filename:
-                return obj['Size']
+                return bool(obj['Size'])
 
         return False
 
@@ -85,7 +107,10 @@ class S3Storage(FileStorage):
         return boto3
 
     def get_s3_tracked_file_location(self, key):
-        return os.path.join(self.prefix, key + '.json')
+        return os.path.join(
+            self.prefix,
+            key + '.json'
+        )
 
 
 class S3StorageWithLocalGit(FileStorageWithLocalGit, S3Storage):

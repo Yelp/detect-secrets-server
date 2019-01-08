@@ -21,9 +21,9 @@ class TestS3TrackedRepo(object):
                 repo.storage.hash_filename('mocked_repository_name'),
             )
             client.download_file.assert_called_with(
-                'pail',
-                'prefix/{}'.format(filename),
-                '{}/tracked/{}'.format(
+                Bucket='pail',
+                Key='prefix/{}'.format(filename),
+                Filename='{}/tracked/{}'.format(
                     mock_rootdir,
                     filename,
                 ),
@@ -47,7 +47,7 @@ class TestS3TrackedRepo(object):
         mock_logic,
         is_file_uploaded,
         override_level,
-        should_upload
+        should_upload,
     ):
         with mock_logic() as (client, repo):
             filename = 'prefix/{}.json'.format(
