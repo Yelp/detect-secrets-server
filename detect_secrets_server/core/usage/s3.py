@@ -2,6 +2,7 @@ import argparse
 
 from .common.storage import should_enable_s3_options
 from .common.validators import config_file
+from .common.validators import json_file
 
 
 class S3Options(object):
@@ -48,7 +49,7 @@ class S3Options(object):
             '--s3-config',
             nargs=1,
             type=config_file,
-            default=[''],
+            default=None,
             help='Specify config file for all S3 config options.',
             metavar='CONFIG_FILE',
         )
@@ -60,7 +61,14 @@ class S3Options(object):
         if not _needs_s3_config(args):
             return
 
-        args.s3_config = args.s3_config[0]
+        try:
+            args.s3_config = args.s3_config[0]
+        except TypeError:
+            # If nothing is specified, then args.s3_config == None.
+            # This is sufficient for conditional logic to determine whether
+            # user supplied a config file.
+            pass
+
         if args.s3_config and any([
             args.s3_bucket,
             args.s3_credentials_file,
@@ -86,7 +94,7 @@ class S3Options(object):
             prefix = args.s3_prefix[0]
             creds_filename = args.s3_credentials_file[0]
 
-        creds = config_file(creds_filename)
+        creds = json_file(creds_filename)
 
         # We don't need this anymore.
         del args.s3_bucket

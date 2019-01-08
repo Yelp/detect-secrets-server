@@ -8,6 +8,7 @@ inputs:
     2. the json output of secrets found.
 """
 import json
+import os
 import subprocess
 
 from .base import BaseHook
@@ -16,7 +17,13 @@ from .base import BaseHook
 class ExternalHook(BaseHook):
 
     def __init__(self, filename):
-        self.filename = filename
+        if filename.startswith('/'):
+            self.filename = filename
+        else:
+            self.filename = os.path.join(
+                os.getcwd(),
+                filename,
+            )
 
     def alert(self, repo_name, secrets):
         subprocess.call([

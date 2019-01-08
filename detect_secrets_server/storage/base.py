@@ -42,6 +42,8 @@ class BaseStorage(object):
         """Return iterator over tracked repositories.
 
         :rtype: (dict, bool)
+            dict: metadata for tracked repo
+            bool: True if local git repo
         """
         pass
 

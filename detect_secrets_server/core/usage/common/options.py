@@ -17,6 +17,11 @@ class CommonOptions(object):
         self.parser = subparser.add_parser(action)
         self._add_common_arguments()
 
+    def add_arguments(self):
+        self.add_local_flag()
+
+        return self
+
     def add_local_flag(self):
         self.parser.add_argument(
             '-L',
