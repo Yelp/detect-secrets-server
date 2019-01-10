@@ -21,9 +21,9 @@ class TestS3TrackedRepo(object):
                 repo.storage.hash_filename('mocked_repository_name'),
             )
             client.download_file.assert_called_with(
-                'pail',
-                'prefix/{}'.format(filename),
-                '{}/tracked/{}'.format(
+                Bucket='pail',
+                Key='prefix/{}'.format(filename),
+                Filename='{}/tracked/{}'.format(
                     mock_rootdir,
                     filename,
                 ),

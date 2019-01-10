@@ -1,15 +1,13 @@
 from __future__ import absolute_import
 
 import json
-import sys
-from contextlib import contextmanager
 
-import mock
 import pytest
 
 from .base_test import assert_directories_created
 from detect_secrets_server.storage.file import FileStorage
 from detect_secrets_server.storage.file import FileStorageWithLocalGit
+from testing.mocks import mock_open
 
 try:
     FileNotFoundError
@@ -83,15 +81,3 @@ class TestFileStorageWithLocalGit(object):
                     mock_rootdir,
                 ),
             )
-
-
-@contextmanager
-def mock_open(data=None):
-    if not data:
-        data = {}
-
-    namespace = 'builtins.open' if sys.version_info[0] >= 3 else '__builtin__.open'
-
-    mock_open = mock.mock_open(read_data=json.dumps(data))
-    with mock.patch(namespace, mock_open):
-        yield mock_open

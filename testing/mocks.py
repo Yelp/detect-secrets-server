@@ -1,11 +1,25 @@
 """
 This is a collection of utility functions for easier, DRY testing.
 """
+import json
+import sys
 from collections import namedtuple
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
 import mock
+
+
+@contextmanager
+def mock_open(data=None):
+    if not data:
+        data = {}
+
+    namespace = 'builtins.open' if sys.version_info[0] >= 3 else '__builtin__.open'
+
+    mock_open = mock.mock_open(read_data=json.dumps(data))
+    with mock.patch(namespace, mock_open):
+        yield mock_open
 
 
 @contextmanager

@@ -33,7 +33,7 @@ def main(argv=None):
         actions.install_mapper(args)
 
     elif args.action == 'list':
-        actions.list_tracked_repositories(args)
+        actions.display_tracked_repositories(args)
 
     elif args.action == 'scan':
         return actions.scan_repo(args)

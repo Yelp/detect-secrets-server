@@ -28,28 +28,54 @@ class S3Storage(FileStorage):
 
         self._initialize_client()
 
-    def get(self, key):
+    def get(self, key, force_download=True):
         """Downloads file from S3 into local storage."""
-        self.client.download_file(
-            self.bucket_name,
-            self.get_s3_tracked_file_location(key),
-            self.get_tracked_file_location(key),
-        )
+        file_on_disk = self.get_tracked_file_location(key)
+        if force_download or not os.path.exists(file_on_disk):
+            self.client.download_file(
+                Bucket=self.bucket_name,
+                Key=self.get_s3_tracked_file_location(key),
+                Filename=file_on_disk,
+            )
 
         return super(S3Storage, self).get(key)
 
+    # NOTE: There's no `put` functionality, because S3TrackedRepo handles uploads
+    #       separately. That is, there are cases when you want to store a local
+    #       copy, but not upload it.
+
     def get_tracked_repositories(self):
-        # TODO
-        pass
+        # Source: https://adamj.eu/tech/2018/01/09/using-boto3-think-pagination/
+        pages = self.client.get_paginator('list_objects').paginate(
+            Bucket=self.bucket_name,
+            Prefix=self.prefix,
+        )
+        for page in pages:
+            for obj in page['Contents']:
+                filename = os.path.splitext(obj['Key'][len(self.prefix):])[0]
+                if filename.startswith('/'):
+                    filename = filename[1:]
+
+                yield (
+                    self.get(filename, force_download=False),
+
+                    # TODO: In it's current state, you can't distinguish the
+                    #       difference between S3StorageWithLocalGit and S3Storage,
+                    #       because there's no separate paths in S3.
+                    #
+                    #       Therefore, return None so that the results will be
+                    #       displayed irregardless of the user's `--local` flag.
+                    None,
+                )
 
     def upload(self, key, value):
         """This is different than `put`, to support situations where you
         may want to upload locally, but not to be sync'ed with the cloud.
         """
         self.client.upload_file(
-            self.get_tracked_file_location(key),
-            self.bucket_name,
-            self.get_s3_tracked_file_location(key),
+            Filename=self.get_tracked_file_location(key),
+            Bucket=self.bucket_name,
+            Key=self.get_s3_tracked_file_location(key),
         )
 
     def is_file_uploaded(self, key):
@@ -61,7 +87,7 @@ class S3Storage(FileStorage):
 
         for obj in response.get('Contents', []):
             if obj['Key'] == filename:
-                return obj['Size']
+                return bool(obj['Size'])
 
         return False
 
@@ -88,5 +114,5 @@ class S3Storage(FileStorage):
         return os.path.join(self.prefix, key + '.json')
 
 
-class S3StorageWithLocalGit(FileStorageWithLocalGit, S3Storage):
+class S3StorageWithLocalGit(S3Storage, FileStorageWithLocalGit):
     pass
