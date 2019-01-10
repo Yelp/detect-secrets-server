@@ -4,10 +4,10 @@
 # and uploads this package to pypi.
 
 function usage() {
-    echo "Usage: uploader.sh [test|public]"
+    echo "Usage: uploader.sh [test|main]"
     echo "Specify the pypi instance you want to upload to."
     echo "  - test:   uploads to test.pypi.org"
-    echo "  - public: uploads to pypi.org"
+    echo "  - main:   uploads to pypi.org"
 }
 
 function main() {
@@ -16,7 +16,7 @@ function main() {
         usage
         return 0
     fi
-    if [[ "$mode" != "public" ]] && [[ "$mode" != "test" ]]; then
+    if [[ "$mode" != "main" ]] && [[ "$mode" != "test" ]]; then
         usage
         return 1
     fi
@@ -26,7 +26,6 @@ function main() {
         return 1
     fi
 
-    return
     # Install dependencies
     pip install setuptools wheel twine
 
@@ -78,7 +77,7 @@ function gitTagVersion() {
 function uploadToPyPI() {
     # Usage: uploadToPyPI <mode>
     local mode="$1"
-    if [[ "$mode" == "public" ]]; then
+    if [[ "$mode" == "main" ]]; then
         twine upload dist/*
     else
         twine upload --repository-url https://test.pypi.org/legacy/ dist/*
@@ -101,7 +100,7 @@ function testUpload() {
 function installFromPyPI() {
     # Usage: installFromPyPI <mode>
     local mode="$1"
-    if [[ "$mode" == "public" ]]; then
+    if [[ "$mode" == "main" ]]; then
         pip install detect-secrets-server
     else
         pip install --index-url https://test.pypi.org/simple/ detect-secrets-server
