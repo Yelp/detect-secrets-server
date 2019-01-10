@@ -1,3 +1,4 @@
+import argparse
 import os
 
 from detect_secrets.core.usage import PluginOptions
@@ -30,6 +31,14 @@ class ScanOptions(CommonOptions):
                 'saving state.'
             ),
         )
+        self.parser.add_argument(
+            '--always-update-state',
+            action='store_true',
+            help=(
+                'Always update the internal tracking state (latest commit scanned) '
+                'after a successful scan, despite finding secrets.'
+            ),
+        )
 
         self.add_local_flag()
         for option in [PluginOptions, OutputOptions]:
@@ -40,6 +49,11 @@ class ScanOptions(CommonOptions):
     @staticmethod
     def consolidate_args(args):
         """Validation and appropriate formatting of args.repo"""
+        if args.dry_run and args.always_update_state:
+            raise argparse.ArgumentTypeError(
+                'Can\'t use --dry-run with --always-update-state.',
+            )
+
         for option in [CommonOptions, OutputOptions]:
             option.consolidate_args(args)
 

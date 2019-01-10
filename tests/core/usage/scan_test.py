@@ -18,3 +18,12 @@ class TestScanOptions(UsageTest):
         assert args.action == 'scan'
         assert args.local
         assert isinstance(args.output_hook, ExternalHook)
+
+    def test_conflicting_args(self):
+        with pytest.raises(SystemExit):
+            self.parse_args(
+                'scan'
+                ' --dry-run --always-update-state'
+                ' -L examples'
+                ' --output-hook examples/standalone_hook.py'
+            )
