@@ -21,6 +21,12 @@ function main() {
         return 1
     fi
 
+    gitTagVersion "$mode"
+    if [[ "$?" != 0 ]]; then
+        return 1
+    fi
+
+    return
     # Install dependencies
     pip install setuptools wheel twine
 
@@ -33,6 +39,40 @@ function main() {
         echo "Success!"
         rm -r build/ dist/
     fi
+}
+
+function gitTagVersion() {
+    # Usage: gitTagVersion <mode>
+    # This tags the latest upload with the latest version.
+    local mode="$1"
+
+    local version
+    version=`python -m detect_secrets_server --version`
+    if [[ "$?" != 0 ]]; then
+        echo "Unable to get version information."
+        return 1
+    fi
+
+    local extraArgs=""
+    if [[ "$mode" == "test" ]]; then
+        extraArgs="--index-url https://test.pypi.org/simple/"
+    fi
+
+    # Check pip for existing version
+    local buffer
+    buffer=$((pip install $extraArgs detect_secrets_server==no_version_found) 2>&1)
+    buffer=`echo "$buffer" | grep "$version"`
+    if [[ "$?" == 0 ]]; then
+        echo "error: Version already exists in PyPI."
+        return 1
+    fi
+
+    # Ignore output
+    buffer=`git tag --list | grep "^v$version$"`
+    if [[ "$?" != 0 ]]; then
+        git tag "v$version" && git push origin --tags
+    fi
+
 }
 
 function uploadToPyPI() {
