@@ -47,7 +47,7 @@ class TestS3TrackedRepo(object):
         mock_logic,
         is_file_uploaded,
         override_level,
-        should_upload
+        should_upload,
     ):
         with mock_logic() as (client, repo):
             filename = 'prefix/{}.json'.format(

@@ -79,6 +79,11 @@ class S3Storage(FileStorage):
         )
 
     def is_file_uploaded(self, key):
+        """Note: that we are using the filename as a prefix, so we will
+        never run into the 1000 object limit of `list_objects_v2`.
+
+        :rtype: bool
+        """
         filename = self.get_s3_tracked_file_location(key)
         response = self.client.list_objects_v2(
             Bucket=self.bucket_name,
@@ -111,7 +116,10 @@ class S3Storage(FileStorage):
         return boto3
 
     def get_s3_tracked_file_location(self, key):
-        return os.path.join(self.prefix, key + '.json')
+        return os.path.join(
+            self.prefix,
+            key + '.json'
+        )
 
 
 class S3StorageWithLocalGit(S3Storage, FileStorageWithLocalGit):

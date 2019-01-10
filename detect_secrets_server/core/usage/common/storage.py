@@ -1,6 +1,6 @@
 try:
     from functools import lru_cache
-except ImportError:
+except ImportError:  # pragma: no cover
     from functools32 import lru_cache
 
 
@@ -15,7 +15,7 @@ def get_storage_options():
 
 
 @lru_cache(maxsize=1)
-def should_enable_s3_options():     # pragma: no cover
+def should_enable_s3_options():  # pragma: no cover
     try:
         import boto3    # noqa: F401
         return True
