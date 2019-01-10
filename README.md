@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/Yelp/detect-secrets-server.svg?branch=master)](https://travis-ci.org/Yelp/detect-secrets-server)
+[![PyPI version](https://badge.fury.io/py/detect-secrets-server.svg)](https://badge.fury.io/py/detect-secrets-server)
+
 # detect-secrets-server
 
 ## About
