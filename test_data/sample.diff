@@ -1,0 +1,11 @@
+diff --git a/examples/aws_credentials.json b/examples/aws_credentials.json
+index 05c305b..4764bb2 100644
+--- a/examples/aws_credentials.json
++++ b/examples/aws_credentials.json
+@@ -1,4 +1,4 @@
+ {
+-    "accessKeyId": "access_key",
+-    "secretAccessKey": "secret_key"
++    "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
++    "secretAccessKey": "81442db33ceee1092586feb635d7b3c5d72257c775ee323414bac8e673d41af3"
+ }

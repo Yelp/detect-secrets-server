@@ -1,14 +1,65 @@
 from __future__ import absolute_import
 
+import json as json_module
+
 from detect_secrets.core.potential_secret import PotentialSecret
 from detect_secrets.core.secrets_collection import SecretsCollection
+
+
+def metadata_factory(repo, json=False, **kwargs):
+    """
+    This generates a layout you would expect for metadata storage with files.
+
+    :type json: bool
+    :param json: if True, will return string instead.
+    """
+    output = {
+        "baseline_filename": None,
+        "crontab": "0 0 * * *",
+        "exclude_regex": None,
+        "plugins": {
+            "Base64HighEntropyString": {
+                "base64_limit": 4.5,
+            },
+            "BasicAuthDetector": {},
+            "HexHighEntropyString": {
+                "hex_limit": 3,
+            },
+            "PrivateKeyDetector": {},
+        },
+        "repo": repo,
+        "sha": 'sha256-hash',
+    }
+
+    output.update(kwargs)
+
+    if json:
+        return json_module.dumps(output, indent=2, sort_keys=True)
+    return output
+
+
+def single_repo_config_factory(repo, **kwargs):
+    """
+    This generates a layout used in passing config files when initializing repos.
+    """
+    output = {
+        'repo': repo,
+    }
+    output.update(kwargs)
+
+    return output
 
 
 def potential_secret_factory(type_='type', filename='filename', lineno=1, secret='secret'):
     """This is only marginally better than creating PotentialSecret objects directly,
     because of default values.
     """
-    return PotentialSecret(type_, filename, lineno, secret)
+    return PotentialSecret(
+        typ=type_,
+        filename=filename,
+        lineno=lineno,
+        secret=secret,
+    )
 
 
 def secrets_collection_factory(secrets=None, plugins=(), exclude_regex=''):  # pragma: no cover
@@ -35,16 +86,6 @@ def secrets_collection_factory(secrets=None, plugins=(), exclude_regex=''):  # p
         _add_secret(collection, **kwargs)
 
     return collection
-
-
-def mock_repo_factory():
-    # TODO: I will fix this, when I turn the repo tests to use pytest (and
-    #       subsequently, factory patterns)
-    class Temporary:
-        def get_blame(self):  # pragma: no cover
-            pass
-
-    return Temporary()
 
 
 def _add_secret(collection, type_='type', secret='secret', filename='filename', lineno=1):

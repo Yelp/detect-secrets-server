@@ -6,10 +6,26 @@ omit =
     /tmp*
     setup.py
 
+    # These are solely output plugins, and make it hard to really test
+    # without mocking the world
+    detect_secrets_server/hooks/*
+
+    venv/*
+
 [report]
+skip_covered = True
 exclude_lines =
     # Don't complain if non-runnable code isn't run:
     ^if __name__ == ['"]__main__['"]:$
 
     # Need to redefine this, as per documentation
     pragma: no cover
+
+    # Don't complain if performing logic for cross-version functionality
+    ^\s*except ImportError:\b
+
+    # Don't complain if tests don't hit defensive assertion code:
+    ^\s*raise AssertionError\b
+    ^\s*raise NotImplementedError\b
+    ^\s*return NotImplemented\b
+    ^\s*raise$

@@ -1,0 +1,9 @@
+coverage
+detect-secrets>=0.11.0
+mock
+PyYAML
+pre-commit
+pytest
+python-crontab
+tox
+unidiff

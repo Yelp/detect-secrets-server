@@ -1,315 +1,318 @@
 from __future__ import absolute_import
 
 import json
-import unittest
-from subprocess import CalledProcessError
+from contextlib import contextmanager
 
 import mock
-from detect_secrets.core.baseline import get_secrets_not_in_baseline
-from detect_secrets.core.potential_secret import PotentialSecret
-from detect_secrets.core.secrets_collection import SecretsCollection
-from detect_secrets.plugins import SensitivityValues
+import pytest
 
 from detect_secrets_server.repos.base_tracked_repo import BaseTrackedRepo
-from detect_secrets_server.repos.base_tracked_repo import DEFAULT_BASE_TMP_DIR
-from detect_secrets_server.repos.base_tracked_repo import get_filepath_safe
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
-from detect_secrets_server.repos.repo_config import RepoConfig
-from tests.util.mock_util import mock_subprocess
-from tests.util.mock_util import PropertyMock
-from tests.util.mock_util import SubprocessMock
+from detect_secrets_server.storage.file import FileStorage
+from testing.factories import metadata_factory
+from testing.mocks import mock_git_calls
+from testing.mocks import SubprocessMock
 
 
-def mock_tracked_repo(cls=BaseTrackedRepo, **kwargs):
-    """Returns a mock TrackedRepo for testing"""
+class TestLoadFromFile(object):
 
-    defaults = {
-        'sha': 'does_not_matter',
-        'repo': 'git@github.com:pre-commit/pre-commit-hooks.git',
-        'cron': '* * 4 * *',
-        'repo_config': RepoConfig(
-            base_tmp_dir='foo/bar',
-            baseline='.secrets.baseline',
-            exclude_regex='',
-        ),
-        'plugin_sensitivity': SensitivityValues(
-            base64_limit=4.5,
-            hex_limit=3,
-        )
-    }
-
-    defaults.update(kwargs)
-
-    with mock.patch('detect_secrets_server.repos.base_tracked_repo.os.path.isdir') as m:
-        m.return_value = True
-        return cls(**defaults)
-
-
-class BaseTrackedRepoTest(unittest.TestCase):
-
-    def test_get_filepath_safe(self):
-        assert get_filepath_safe('/path/to', 'file') == '/path/to/file'
-        assert get_filepath_safe('/path/to', '../to/file') == '/path/to/file'
-        assert get_filepath_safe('/path/to/../to', 'file') == '/path/to/file'
-        assert get_filepath_safe('/path/to', '../../etc/pwd') is None
-
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.os.path.isdir')
-    def test_load_from_file_success(self, mock_isdir):
-        mock_isdir.return_value = True
-
-        # Emulate the file that will be written to disk, for state saving.
-        repo_data = {
-            'repo': 'repo-uri',
-            'sha': 'sha256-hash',
-            'cron': '* * * * *',
-            'plugins': {
-                'HexHighEntropyString': 3,
-            },
-            'baseline_file': 'foobar',
-            's3_config': 'make_sure_can_be_here_without_affecting_anything',
-        }
-        file_contents = json.dumps(repo_data, indent=2)
-
-        m = mock.mock_open(read_data=file_contents)
-        repo_config = RepoConfig(
-            base_tmp_dir=DEFAULT_BASE_TMP_DIR,
-            baseline='baseline',
-            exclude_regex='',
-        )
-        with mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open', m):
-            repo = BaseTrackedRepo.load_from_file('will_be_mocked', repo_config=repo_config)
-
-        assert repo.repo == 'repo-uri'
-        assert repo.last_commit_hash == 'sha256-hash'
-        assert repo.crontab == '* * * * *'
-        assert repo.plugin_config.hex_limit == 3
-        assert repo.plugin_config.base64_limit is None
-
-    # @mock.patch('detect_secrets_server.repos.CustomLogObj')
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.get_filepath_safe')
-    def test_load_from_file_failures(self, mock_filepath):
-        repo_config = RepoConfig(
-            base_tmp_dir=DEFAULT_BASE_TMP_DIR,
-            baseline='baseline',
-            exclude_regex='',
-        )
-        # IOError
-        mock_filepath.return_value = '/blah'
-        assert BaseTrackedRepo.load_from_file('repo', repo_config) is None
-
-        # JSONDecodeError
-        m = mock.mock_open(read_data='not a json')
-        with mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open', m):
-            assert BaseTrackedRepo.load_from_file('repo', repo_config) is None
-
-        # TypeError
-        mock_filepath.return_value = None
-        assert BaseTrackedRepo.load_from_file('repo', repo_config) is None
-
-    def test_cron(self):
-        repo = mock_tracked_repo()
-        assert repo.cron() == '* * 4 * *    detect-secrets-server --scan-repo pre-commit/pre-commit-hooks'
-
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
-    def test_scan_no_baseline(self, mock_subprocess_obj):
-        repo = mock_tracked_repo()
-        repo.baseline_file = None
-
-        # We don't really care about any **actual** git results, because mocked.
-        mock_subprocess_obj.side_effect = mock_subprocess((
-            SubprocessMock(
-                expected_input='git show',
-                mocked_output=b'will be mocked',
+    def test_success(self, mock_logic, mock_rootdir):
+        mock_open = mock.mock_open(
+            read_data=metadata_factory(
+                'git@github.com:yelp/detect-secrets',
+                baseline_filename='foobar',
+                plugins={
+                    'HexHighEntropyString': {
+                        'hex_limit': 3.5,
+                    },
+                },
+                json=True,
             ),
-        ))
-        secrets = repo.scan()
-        assert isinstance(secrets, SecretsCollection)
+        )
+
+        repo = mock_logic(mock_open)
+
+        mock_open.assert_called_with(
+            '{}/tracked/{}.json'.format(
+                mock_rootdir,
+                FileStorage.hash_filename('will_be_mocked'),
+            )
+        )
+
+        assert repo.last_commit_hash == 'sha256-hash'
+        assert repo.repo == 'git@github.com:yelp/detect-secrets'
+        assert repo.crontab == '0 0 * * *'
+        assert repo.plugin_config == {
+            'HexHighEntropyString': {
+                'hex_limit': 3.5,
+            },
+        }
+        assert repo.baseline_filename == 'foobar'
+        assert not repo.exclude_regex
+        assert isinstance(repo.storage, FileStorage)
+
+    def test_no_file_found(self, mock_rootdir):
+        with pytest.raises(IOError):
+            BaseTrackedRepo.load_from_file(
+                'does_not_exist',
+                mock_rootdir,
+            )
+
+
+class TestScan(object):
+
+    def test_no_baseline(self, mock_logic, mock_rootdir):
+        repo = mock_logic()
+        with mock_git_calls(*self.git_calls(mock_rootdir)):
+            secrets = repo.scan()
+
+        assert len(secrets.data['examples/aws_credentials.json']) == 1
+
+    def test_unable_to_find_baseline(self, mock_logic, mock_rootdir):
+        calls = self.git_calls(mock_rootdir)
+        calls[-1] = SubprocessMock(
+            expected_input='git show HEAD:foobar',
+            mocked_output=b'fatal: Path \'foobar\' does not exist',
+            should_throw_exception=True,
+        )
+
+        repo = mock_logic()
+        with mock_git_calls(*calls):
+            secrets = repo.scan()
+
+        assert len(secrets.data['examples/aws_credentials.json']) == 1
+
+    def test_no_baseline_file_provided(self, mock_logic, mock_rootdir):
+        repo = mock_logic(
+            baseline_filename=None,
+        )
+        with mock_git_calls(*self.git_calls(mock_rootdir)[:-1]):
+            secrets = repo.scan()
+
+        assert len(secrets.data['examples/aws_credentials.json']) == 1
+
+    def test_scan_with_baseline(self, mock_logic, mock_rootdir):
+        baseline = json.dumps({
+            'results': {
+                'examples/aws_credentials.json': [
+                    {
+                        'type': 'Hex High Entropy String',
+                        'hashed_secret': '2353d31737bbbdb10eb97466b8f2dc057ead1432',
+                        'line_number': 3,       # does not matter
+                    },
+                ],
+            },
+            'exclude_regex': '',
+            'plugins_used': [
+                {
+                    'hex_limit': 3.5,
+                    'name': 'HexHighEntropyString',
+                },
+            ],
+        })
+
+        calls = self.git_calls(mock_rootdir)
+        calls[-1] = SubprocessMock(
+            expected_input='git show HEAD:foobar',
+            mocked_output=baseline,
+        )
+
+        repo = mock_logic()
+        with mock_git_calls(*calls):
+            secrets = repo.scan()
+
         assert len(secrets.data) == 0
 
-        # `git clone` unnecessary, because already cloned. However, should still work.
-        mock_subprocess_obj.side_effect = mock_subprocess((
+    def test_scan_nonexistent_last_saved_hash(self, mock_logic, mock_rootdir):
+        calls = self.git_calls(mock_rootdir)
+        calls[-2] = SubprocessMock(
+            expected_input='git diff sha256-hash HEAD -- examples/aws_credentials.json',
+            mocked_output=b'fatal: the hash is not in git history',
+            should_throw_exception=True,
+        )
+        calls[-1] = SubprocessMock(
+            expected_input='git rev-parse HEAD',
+        )
+
+        repo = mock_logic()
+        with mock_git_calls(*calls):
+            secrets = repo.scan()
+
+        assert secrets.data == {}
+
+    def git_calls(self, mock_rootdir):
+        """We need to do a bunch of mocking, because there's a lot of git
+        operations. This function handles all that.
+        """
+        tracked_location = '{}/repos/{}'.format(
+            mock_rootdir,
+            FileStorage.hash_filename('yelp/detect-secrets'),
+        )
+
+        with open('test_data/sample.diff') as f:
+            diff_content = f.read()
+
+        return [
+            # clone and pull master
             SubprocessMock(
-                expected_input='git clone',
-                mocked_output=b"fatal: destination path 'asdf' already exists",
-                should_throw_exception=True,
-            ),
-        ))
-        secrets = repo.scan()
-        assert isinstance(secrets, SecretsCollection)
-
-        # Baseline supplied, but unable to find baseline file. Should still work.
-        repo.baseline_file = 'asdf'
-        mock_subprocess_obj.side_effect = mock_subprocess((
-            SubprocessMock(
-                expected_input='git show',
-                mocked_output=b"fatal: Path 'asdf' does not exist",
-                should_throw_exception=True,
-            ),
-        ))
-        secrets = repo.scan()
-        assert isinstance(secrets, SecretsCollection)
-
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.get_secrets_not_in_baseline')
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.SecretsCollection.load_baseline_from_string')
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
-    def test_scan_with_baseline(self, mock_subprocess_obj, mock_load_from_string, mock_apply):
-        repo = mock_tracked_repo()
-
-        # Setup secrets
-        secretA = PotentialSecret('type', 'filenameA', 1, 'blah')
-        secretB = PotentialSecret('type', 'filenameA', 2, 'curry')
-        original_secrets = SecretsCollection()
-        original_secrets.data['filenameA'] = {
-            secretA: secretA,
-            secretB: secretB,
-        }
-        baseline_secrets = SecretsCollection()
-        baseline_secrets.data['filenameA'] = {
-            secretA: secretA,
-        }
-
-        # Easier than mocking load_from_diff.
-        mock_apply.side_effect = lambda orig, base: \
-            get_secrets_not_in_baseline(original_secrets, baseline_secrets)
-
-        mock_subprocess_obj.side_effect = mock_subprocess((
-            SubprocessMock(
-                expected_input='git show',
-                mocked_output=b'will be mocked',
-            ),
-        ))
-        secrets = repo.scan()
-
-        assert len(secrets.data) == 1
-        assert secrets.data['filenameA'][secretB] == secretB
-
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
-    def test_scan_bad_input(self, mock_subprocess_obj):
-        repo = mock_tracked_repo()
-
-        cases = [
-            (
-                'git clone',
-                b'fatal: Could not read from remote repository',
-            ),
-            (
-                'git pull',
-                b'fatal: Could not read from remote repository',
-            ),
-            (
-                'git show',
-                b'fatal: some unknown error',
-            ),
-        ]
-
-        for case in cases:
-            mock_subprocess_obj.side_effect = mock_subprocess((
-                SubprocessMock(
-                    expected_input=case[0],
-                    mocked_output=case[1],
-                    should_throw_exception=True,
+                expected_input=(
+                    'git clone git@github.com:yelp/detect-secrets {} --bare'.format(
+                        tracked_location,
+                    )
                 ),
-            ))
-            try:
-                repo.scan()
-                assert False
-            except CalledProcessError:
-                pass
+            ),
+            SubprocessMock(
+                expected_input='git pull',
+            ),
 
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
-    def test_scan_with_nonexistant_last_saved_hash(self, mock_subprocess_obj):
-        repo = mock_tracked_repo()
+            # get diff (filtering out ignored file extensions)
+            SubprocessMock(
+                expected_input='git diff sha256-hash HEAD --name-only',
+                mocked_output='examples/aws_credentials.json',
+            ),
+            SubprocessMock(
+                expected_input='git diff sha256-hash HEAD -- examples/aws_credentials.json',
+                mocked_output=diff_content,
+            ),
 
-        cases = [
-            (
-                'git diff',
-                b'fatal: the hash is not in git history',
+            # get baseline file
+            SubprocessMock(
+                expected_input='git show HEAD:foobar',
+                mocked_output=b'',
             ),
         ]
 
-        for case in cases:
-            mock_subprocess_obj.side_effect = mock_subprocess((
-                SubprocessMock(
-                    expected_input=case[0],
-                    mocked_output=case[1],
-                    should_throw_exception=True,
+
+class TestUpdate(object):
+
+    def test_success(self, mock_logic):
+        repo = mock_logic()
+
+        with mock_git_calls(
+            SubprocessMock(
+                expected_input='git rev-parse HEAD',
+                mocked_output='new_hash',
+            )
+        ):
+            repo.update()
+
+        assert repo.last_commit_hash == 'new_hash'
+
+
+class TestSave(object):
+
+    @pytest.mark.parametrize(
+        'override_level,is_file,mocked_input',
+        [
+            # OverrideLevel doesn't matter if no file exists.
+            (OverrideLevel.NEVER, False, '',),
+            (OverrideLevel.ASK_USER, False, '',),
+            (OverrideLevel.ALWAYS, False, '',),
+
+            # Override file, if desired.
+            (OverrideLevel.ALWAYS, True, '',),
+
+            # Override file, if user requested.
+            (OverrideLevel.ASK_USER, True, 'y',),
+        ],
+    )
+    def test_save_on_conditions(
+        self,
+        override_level,
+        is_file,
+        mocked_input,
+        mock_logic,
+        mock_rootdir,
+    ):
+        with self.setup_env(mock_logic, is_file, mocked_input) as (repo, mock_open):
+            assert repo.save(override_level)
+
+            assert_writes_accurately(mock_open, mock_rootdir)
+
+    @pytest.mark.parametrize(
+        'override_level,is_file,mocked_input',
+        [
+            (OverrideLevel.NEVER, True, '',),
+            (OverrideLevel.ASK_USER, True, 'n',),
+        ],
+    )
+    def test_does_not_save_on_conditions(
+            self,
+            mock_logic,
+            override_level,
+            is_file,
+            mocked_input
+    ):
+        with self.setup_env(mock_logic, is_file, mocked_input) as (repo, mock_open):
+            assert not repo.save(override_level)
+            assert not mock_open().write.called
+
+    @contextmanager
+    def setup_env(self, mock_logic, is_file, mocked_input):
+        repo = mock_logic()
+        mock_open = mock.mock_open()
+
+        with mock.patch(
+            'detect_secrets_server.repos.base_tracked_repo.os.path.isfile',
+            return_value=is_file
+        ), mock.patch(
+            'detect_secrets_server.storage.file.open',
+            mock_open,
+        ), mock.patch(
+            'detect_secrets_server.repos.base_tracked_repo.input',
+            return_value=mocked_input,
+        ):
+            yield repo, mock_open
+
+
+def assert_writes_accurately(mock_open, mock_rootdir):
+    mock_open.assert_called_with(
+        '{}/tracked/{}.json'.format(
+            mock_rootdir,
+            FileStorage.hash_filename('yelp/detect-secrets'),
+        ),
+        'w',
+    )
+    mock_open().write.assert_called_with(
+        metadata_factory(
+            'git@github.com:yelp/detect-secrets',
+            baseline_filename='foobar',
+            json=True,
+        ),
+    )
+
+
+@pytest.fixture
+def mock_logic(mock_rootdir):
+    def wrapped(mock_open=None, **kwargs):
+        """
+        :type mock_open: mock.mock_open
+        :param mock_open: allows for customized mock_open,
+            so can do assertions outside this function.
+        """
+        if not mock_open:
+            defaults = {
+                'repo': 'git@github.com:yelp/detect-secrets',
+                'baseline_filename': 'foobar',
+            }
+            defaults.update(kwargs)
+
+            mock_open = mock.mock_open(
+                read_data=metadata_factory(
+                    json=True,
+                    **defaults
                 ),
-            ))
-            try:
-                # The diff will be '', so no secrets
-                secrets = repo.scan()
-                assert secrets.data == {}
-            except CalledProcessError:
-                assert False
+            )
 
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.subprocess.check_output', autospec=True)
-    def test_update(self, mock_subprocess):
-        mock_subprocess.return_value = b'asdf'
-        repo = mock_tracked_repo()
+        with mock.patch(
+            'detect_secrets_server.storage.file.open',
+            mock_open
+        ), mock.patch(
+            'detect_secrets_server.storage.base.os.makedirs',
+        ):
+            return BaseTrackedRepo.load_from_file(
+                'will_be_mocked',
+                mock_rootdir,
+            )
 
-        repo.update()
-
-        assert repo.last_commit_hash == 'asdf'
-
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.os.path.isfile')
-    def test_save_no_existing_file(self, mock_isfile):
-        mock_isfile.return_value = False
-        repo = mock_tracked_repo()
-
-        m = mock.mock_open()
-        with mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open', m):
-            repo.save()
-
-        m().write.assert_called_once_with(json.dumps(repo.__dict__, indent=2))
-
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open')
-    def test_save_bad_input(self, mock_open):
-        # Needed for coverage
-        repo = mock_tracked_repo()
-
-        mock_stub = PropertyMock(return_value=None)
-        with mock.patch.object(BaseTrackedRepo, 'tracked_file_location', mock_stub):
-            assert repo.save() is False
-            assert mock_open.called is False
-
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.codecs.open')
-    @mock.patch('detect_secrets_server.repos.base_tracked_repo.os.path.isfile')
-    def test_save_override_levels(self, mock_isfile, mock_open):
-        mock_isfile.return_value = True
-        repo = mock_tracked_repo()
-
-        # If NEVER override, then make sure that's true.
-        assert repo.save(OverrideLevel.NEVER) is False
-
-        mock_stub = mock.Mock()
-        with mock.patch.object(repo, '_prompt_user_override', mock_stub):
-            # If user says NO to override
-            mock_stub.return_value = False
-            assert repo.save() is False
-
-            # If user says YES to override
-            mock_stub.return_value = True
-            assert repo.save() is True
-
-    def test_get_repo_name(self):
-        cases = [
-            (
-                'git@github.com:pre-commit/pre-commit-hooks.git',
-                'pre-commit/pre-commit-hooks',
-            ),
-
-            # Doesn't end with `.git`
-            (
-                'git@github.com:pre-commit/pre-commit-hooks',
-                'pre-commit/pre-commit-hooks',
-            ),
-
-            # No slash
-            (
-                'git@git.example.com:pre-commit-hooks',
-                'pre-commit-hooks',
-            ),
-        ]
-
-        for case in cases:
-            assert mock_tracked_repo(repo=case[0]).name == case[1]
+    return wrapped
