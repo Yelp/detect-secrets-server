@@ -25,6 +25,13 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+### 0.2.1
+
+##### Jan 10, 2019
+
+* Added support for delegating state management to output hooks, using the
+  flag `--always-update-state`.
+
 ### 0.2.0
 
 ##### Jan 09, 2019
