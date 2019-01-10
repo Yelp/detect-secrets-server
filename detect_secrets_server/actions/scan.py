@@ -30,7 +30,10 @@ def scan_repo(args):
 
     if len(secrets.data) > 0:
         _alert_on_secrets_found(repo, secrets.json(), args.output_hook)
-    elif not args.dry_run:
+
+    if args.always_update_state or (
+        len(secrets.data) == 0 and not args.dry_run
+    ):
         _update_tracked_repo(repo)
 
     return 0
