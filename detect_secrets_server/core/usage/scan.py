@@ -35,8 +35,8 @@ class ScanOptions(CommonOptions):
             '--always-update-state',
             action='store_true',
             help=(
-                'Always update the internal tracking state after a successful scan, '
-                'despite finding secrets.'
+                'Always update the internal tracking state (latest commit scanned) '
+                'after a successful scan, despite finding secrets.'
             ),
         )
 
