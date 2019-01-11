@@ -25,6 +25,13 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+### 0.2.2
+
+##### Jan 11, 2019
+
+* Bumped version of `detect-secrets` to 0.11.4, so that we can leverage the
+  new `AWSKeyDetector` and the `KeywordDetector`.
+
 ### 0.2.1
 
 ##### Jan 10, 2019
