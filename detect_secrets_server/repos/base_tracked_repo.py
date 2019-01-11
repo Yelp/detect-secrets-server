@@ -7,7 +7,7 @@ from enum import Enum
 
 from detect_secrets.core.baseline import get_secrets_not_in_baseline
 from detect_secrets.core.secrets_collection import SecretsCollection
-from detect_secrets.plugins.core import initialize as initialize_plugins
+from detect_secrets.plugins.common import initialize as initialize_plugins
 
 from detect_secrets_server.storage.file import FileStorage
 
