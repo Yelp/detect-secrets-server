@@ -66,7 +66,8 @@ class TestScan(object):
         with mock_git_calls(*self.git_calls(mock_rootdir)):
             secrets = repo.scan()
 
-        assert len(secrets.data['examples/aws_credentials.json']) == 1
+        # It matches both HexHighEntropyString and AWSKeyDetector
+        assert len(secrets.data['examples/aws_credentials.json']) == 2
 
     def test_unable_to_find_baseline(self, mock_logic, mock_rootdir):
         calls = self.git_calls(mock_rootdir)
@@ -80,7 +81,7 @@ class TestScan(object):
         with mock_git_calls(*calls):
             secrets = repo.scan()
 
-        assert len(secrets.data['examples/aws_credentials.json']) == 1
+        assert len(secrets.data['examples/aws_credentials.json']) == 2
 
     def test_no_baseline_file_provided(self, mock_logic, mock_rootdir):
         repo = mock_logic(
@@ -89,7 +90,7 @@ class TestScan(object):
         with mock_git_calls(*self.git_calls(mock_rootdir)[:-1]):
             secrets = repo.scan()
 
-        assert len(secrets.data['examples/aws_credentials.json']) == 1
+        assert len(secrets.data['examples/aws_credentials.json']) == 2
 
     def test_scan_with_baseline(self, mock_logic, mock_rootdir):
         baseline = json.dumps({
@@ -100,6 +101,11 @@ class TestScan(object):
                         'hashed_secret': '2353d31737bbbdb10eb97466b8f2dc057ead1432',
                         'line_number': 3,       # does not matter
                     },
+                    {
+                        'type': 'AWS Access Key',
+                        'hashed_secret': '25910f981e85ca04baf359199dd0bd4a3ae738b6',
+                        'line_number': 3,       # does not matter
+                    },
                 ],
             },
             'exclude_regex': '',
@@ -107,6 +113,9 @@ class TestScan(object):
                 {
                     'hex_limit': 3.5,
                     'name': 'HexHighEntropyString',
+                },
+                {
+                    'name': 'AWSKeyDetector',
                 },
             ],
         })

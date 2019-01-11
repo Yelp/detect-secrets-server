@@ -26,6 +26,8 @@ def metadata_factory(repo, json=False, **kwargs):
                 "hex_limit": 3,
             },
             "PrivateKeyDetector": {},
+            "KeywordDetector": {},
+            "AWSKeyDetector": {},
         },
         "repo": repo,
         "sha": 'sha256-hash',
