@@ -57,3 +57,7 @@ class TestMain(object):
 
             assert main(argument_string.split()) == 0
             assert getattr(mock_actions, action_executed).called
+
+    def test_repositories_added_can_be_scanned(self, mock_rootdir):
+        assert main('add https://github.com/Yelp/detect-secrets'.split()) == 0
+        assert main('scan Yelp/detect-secrets'.split()) == 0
