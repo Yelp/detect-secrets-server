@@ -25,6 +25,13 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+### 0.2.4
+
+##### Jan 14, 2019
+
+* Bug fix: add/scan now handles non SSH urls for git cloning. See
+  https://github.com/Yelp/detect-secrets-server/issues/13 for more details.
+
 ### 0.2.2
 
 ##### Jan 11, 2019
