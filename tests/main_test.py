@@ -58,6 +58,14 @@ class TestMain(object):
             assert main(argument_string.split()) == 0
             assert getattr(mock_actions, action_executed).called
 
-    def test_repositories_added_can_be_scanned(self, mock_rootdir):
+    @pytest.mark.parametrize(
+        'repo_to_scan',
+        (
+            'Yelp/detect-secrets',
+            'https://github.com/Yelp/detect-secrets',
+            'git@github.com:Yelp/detect-secrets',
+        ),
+    )
+    def test_repositories_added_can_be_scanned(self, mock_rootdir, repo_to_scan):
         assert main('add https://github.com/Yelp/detect-secrets'.split()) == 0
-        assert main('scan Yelp/detect-secrets'.split()) == 0
+        assert main(['scan', repo_to_scan]) == 0

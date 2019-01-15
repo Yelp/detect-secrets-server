@@ -105,6 +105,9 @@ class BaseTrackedRepo(object):
 
     @classmethod
     def get_tracked_repo_data(cls, storage, repo_name):
+        if repo_name.startswith('git@') or repo_name.startswith('http'):
+            repo_name = storage.get_repo_name(repo_name)
+
         return storage.get(storage.hash_filename(repo_name))
 
     @property
