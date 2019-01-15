@@ -35,6 +35,26 @@ class TestBaseStorage(object):
                 'git@github.com:yelp/detect-secrets.git',
                 'yelp/detect-secrets',
             ),
+
+            # Not git@ prefixed
+            (
+                'https://github.com/yelp/detect-secrets',
+                'yelp/detect-secrets',
+            ),
+            (
+                'https://example.com/yelp/detect-secrets',
+                'yelp/detect-secrets',
+            ),
+            (
+                'https://example.com/yelp/detect-secrets.git',
+                'yelp/detect-secrets',
+            ),
+
+            # Throw a PORT number in for good measure
+            (
+                'https://example.com:23456/yelp/detect-secrets',
+                'yelp/detect-secrets',
+            ),
         ],
     )
     def test_repository_name(self, repo, name, base_storage):

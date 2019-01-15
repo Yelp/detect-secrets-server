@@ -7,11 +7,13 @@ from abc import abstractmethod
 from detect_secrets.core.log import log
 
 from .core import git
+from detect_secrets_server.util.version import is_python_2
 
-try:
-    FileNotFoundError
-except NameError:
+if is_python_2():   # pragma: no cover
     FileNotFoundError = IOError
+    import urlparse
+else:
+    import urllib.parse as urlparse
 
 
 class BaseStorage(object):
@@ -70,7 +72,7 @@ class BaseStorage(object):
     @property
     def repository_name(self):
         """Human friendly name of git repository tracked."""
-        return self._get_repo_name(self.repo_url)
+        return self.get_repo_name(self.repo_url)
 
     def clone_and_pull_master(self):
         git.clone_repo_to_location(
@@ -149,22 +151,26 @@ class BaseStorage(object):
         """Function broken out, so it can be referenced in test cases"""
         return hashlib.sha512(name.encode('utf-8')).hexdigest()
 
-    def _initialize_git_repos_directory(self):
-        git_repos_root = os.path.join(self.root, 'repos')
-        if not os.path.isdir(git_repos_root):
-            os.makedirs(git_repos_root)
-
-    def _get_repo_name(self, url):
+    def get_repo_name(self, url):
         """Function broken out, so can be extended in subclass.
 
         Example: 'git@github.com:yelp/detect-secrets' => yelp/detect-secrets
         """
-        name = url.split(':')[1]
+        if url.startswith('git@'):
+            name = url.split(':')[1]
+        else:
+            components = urlparse.urlparse(url)
+            name = components.path.lstrip('/')
 
         if name.endswith('.git'):
             return name[:-4]
 
         return name
+
+    def _initialize_git_repos_directory(self):
+        git_repos_root = os.path.join(self.root, 'repos')
+        if not os.path.isdir(git_repos_root):
+            os.makedirs(git_repos_root)
 
     @property
     def _repo_location(self):
@@ -202,7 +208,7 @@ class LocalGitRepository(BaseStorage):
         if not path.endswith('/.git'):
             path = os.path.join(path, '.git')
 
-        return super(LocalGitRepository, self)._get_repo_name(
+        return super(LocalGitRepository, self).get_repo_name(
             git.get_remote_url(path),
         )
 
