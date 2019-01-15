@@ -1,9 +1,8 @@
-import sys
-
 import pytest
 
 import detect_secrets_server
 from detect_secrets_server.core.usage.parser import ServerParserBuilder
+from detect_secrets_server.util.version import is_python_2
 
 
 def test_version(capsys):
@@ -13,7 +12,7 @@ def test_version(capsys):
     assert str(e.value) == '0'
 
     # Oh, the joys of writing compatible code
-    if sys.version_info[0] < 3:     # pragma: no cover
+    if is_python_2():   # pragma: no cover
         assert capsys.readouterr().err.strip() == detect_secrets_server.__version__
     else:
         assert capsys.readouterr().out.strip() == detect_secrets_server.__version__

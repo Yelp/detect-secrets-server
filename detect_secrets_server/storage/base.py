@@ -7,11 +7,13 @@ from abc import abstractmethod
 from detect_secrets.core.log import log
 
 from .core import git
+from detect_secrets_server.util.version import is_python_2
 
-try:
-    FileNotFoundError
-except NameError:
+if is_python_2():   # pragma: no cover
     FileNotFoundError = IOError
+    import urlparse
+else:
+    import urllib.parse as urlparse
 
 
 class BaseStorage(object):
@@ -159,7 +161,11 @@ class BaseStorage(object):
 
         Example: 'git@github.com:yelp/detect-secrets' => yelp/detect-secrets
         """
-        name = url.split(':')[1]
+        if url.startswith('git@'):
+            name = url.split(':')[1]
+        else:
+            components = urlparse.urlparse(url)
+            name = components.path.lstrip('/')
 
         if name.endswith('.git'):
             return name[:-4]
