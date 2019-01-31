@@ -12,7 +12,7 @@ def test_version(capsys):
     assert str(e.value) == '0'
 
     # Oh, the joys of writing compatible code
-    if is_python_2():   # pragma: no cover
+    if is_python_2():  # pragma: no cover
         assert capsys.readouterr().err.strip() == detect_secrets_server.__version__
-    else:
+    else:  # pragma: no cover
         assert capsys.readouterr().out.strip() == detect_secrets_server.__version__
