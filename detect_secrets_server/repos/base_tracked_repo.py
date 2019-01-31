@@ -119,6 +119,9 @@ class BaseTrackedRepo(object):
         and HEAD.
 
         :raises: subprocess.CalledProcessError
+
+        :rtype: SecretsCollection
+        :returns: secrets found.
         """
         self.storage.clone_and_pull_master()
 
