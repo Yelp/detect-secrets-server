@@ -46,7 +46,7 @@ def mock_git_calls(*cases):
         except IndexError:
             raise AssertionError(
                 '\nExpected: ""\n'
-                'Actual: "{}"'.format(
+                'Actual:   "{}"'.format(
                     command
                 )
             )
@@ -59,7 +59,7 @@ def mock_git_calls(*cases):
 
             raise AssertionError(
                 '\nExpected: "{}"\n'
-                'Actual: "{}"'.format(
+                'Actual:   "{}"'.format(
                     case.expected_input,
                     command,
                 )
@@ -87,7 +87,7 @@ def mock_git_calls(*cases):
     if current_case['index'] != len(cases):
         raise AssertionError(
             '\nExpected: "{}"\n'
-            'Actual: ""'.format(cases[current_case['index']].expected_input)
+            'Actual:   ""'.format(cases[current_case['index']].expected_input)
         )
 
 

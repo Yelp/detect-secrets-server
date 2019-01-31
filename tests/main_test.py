@@ -4,6 +4,9 @@ import mock
 import pytest
 
 from detect_secrets_server.__main__ import main
+from detect_secrets_server.storage.base import BaseStorage
+from testing.mocks import mock_git_calls
+from testing.mocks import SubprocessMock
 from testing.util import cache_buster
 
 
@@ -67,5 +70,62 @@ class TestMain(object):
         ),
     )
     def test_repositories_added_can_be_scanned(self, mock_rootdir, repo_to_scan):
-        assert main('add https://github.com/Yelp/detect-secrets'.split()) == 0
-        assert main(['scan', repo_to_scan]) == 0
+        directory = '{}/repos/{}'.format(
+            mock_rootdir,
+            BaseStorage.hash_filename('Yelp/detect-secrets'),
+        )
+        mocked_sha = 'aabbcc'
+
+        # We don't **actually** want to clone the repo per test run.
+        with mock_git_calls(
+            SubprocessMock(
+                expected_input=(
+                    'git clone https://github.com/Yelp/detect-secrets {} --bare'
+                ).format(
+                    directory,
+                ),
+            ),
+            SubprocessMock(
+                expected_input='git pull',
+            ),
+            # Since there is no prior sha to retrieve
+            SubprocessMock(
+                expected_input='git rev-parse HEAD',
+                mocked_output=mocked_sha,
+            )
+        ):
+            assert main([
+                'add', 'https://github.com/Yelp/detect-secrets',
+                '--root-dir', mock_rootdir,
+            ]) == 0
+
+        with mock_git_calls(
+            # Getting latest changes
+            SubprocessMock(
+                expected_input=(
+                    'git clone https://github.com/Yelp/detect-secrets {} --bare'
+                ).format(
+                    directory,
+                ),
+            ),
+            SubprocessMock(
+                expected_input='git pull',
+            ),
+            # Getting relevant diff
+            SubprocessMock(
+                expected_input='git diff {} HEAD --name-only'.format(mocked_sha),
+                mocked_output='filenameA',
+            ),
+            SubprocessMock(
+                expected_input='git diff {} HEAD -- filenameA'.format(mocked_sha),
+                mocked_output='',
+            ),
+            # Storing latest sha
+            SubprocessMock(
+                expected_input='git rev-parse HEAD',
+            ),
+        ):
+            assert main([
+                'scan', repo_to_scan,
+                '--root-dir', mock_rootdir,
+            ]) == 0
