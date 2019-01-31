@@ -157,6 +157,7 @@ class BaseTrackedRepo(object):
 
         :type override_level: OverrideLevel
         :param override_level: determines if we overwrite the JSON file, if exists.
+
         :rtype: bool
         :returns: True if repository is saved.
         """
