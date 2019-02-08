@@ -83,6 +83,7 @@ class TestScanRepo(object):
                         'hashed_secret': secret_hash,
                         'line_number': 5,
                         'author': 'khock',
+                        'commit': 'd39c008353447bbc1845812fcaf0a03b50af439f',
                     }],
                 },
             )

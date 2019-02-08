@@ -202,7 +202,7 @@ def local_storage(mock_rootdir):
 
 
 def get_mocked_class(class_object):
-    class MockStorage(class_object):
+    class MockStorage(class_object):  # pragma: no cover
         def get(self, key):
             pass
 

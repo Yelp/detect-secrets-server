@@ -119,6 +119,9 @@ class BaseTrackedRepo(object):
         and HEAD.
 
         :raises: subprocess.CalledProcessError
+
+        :rtype: SecretsCollection
+        :returns: secrets found.
         """
         self.storage.clone_and_pull_master()
 
@@ -154,6 +157,7 @@ class BaseTrackedRepo(object):
 
         :type override_level: OverrideLevel
         :param override_level: determines if we overwrite the JSON file, if exists.
+
         :rtype: bool
         :returns: True if repository is saved.
         """

@@ -16,7 +16,7 @@ def mock_rootdir():
             '../tmp'
         )
     )
-    if not os.path.isdir(tempdir):
+    if not os.path.isdir(tempdir):  # pragma: no cover
         os.mkdir(tempdir)
 
     pathname = tempfile.mkdtemp(dir=tempdir)

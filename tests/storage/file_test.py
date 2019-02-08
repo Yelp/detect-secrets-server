@@ -11,7 +11,7 @@ from testing.mocks import mock_open
 
 try:
     FileNotFoundError
-except NameError:
+except NameError:  # pragma: no cover
     FileNotFoundError = IOError
 
 
