@@ -83,8 +83,8 @@ class AddOptions(CommonOptions):
             type=str,
             nargs=1,
             help=(
-                'Filenames that match this regex will be ignored when '
-                'scanning for secrets.'
+                'This regex will be added to repo metadata files when'
+                'adding a repository or overriding an existing one.'
             ),
             metavar='REGEX',
         )

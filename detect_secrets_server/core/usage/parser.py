@@ -78,11 +78,14 @@ def apply_default_plugin_options_to_repos(args):
     This applies default values to the config file, if appropriate.
     """
     for tracked_repo in args.repo:
+        # Issue 17: Not touching exclude_regex in repo metadata
+        # Just ignoring it for now and using the exclusion CLI args given when calling `scan`
+        # (This can be ignored because this function is only called by `add`)
         for key in (
             'baseline',
+            'crontab',
             'exclude_regex',
             'storage',
-            'crontab',
         ):
             if key not in tracked_repo:
                 tracked_repo[key] = getattr(args, key)

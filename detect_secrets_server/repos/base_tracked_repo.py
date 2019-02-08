@@ -39,10 +39,10 @@ class BaseTrackedRepo(object):
         **kwargs
     ):
         """
-        :type repo: string
+        :type repo: str
         :param repo: git URL or local path of repo
 
-        :type sha: string
+        :type sha: str
         :param sha: last commit hash scanned
 
         :type plugins: dict
@@ -56,7 +56,7 @@ class BaseTrackedRepo(object):
         :param exclude_regex: used for repository scanning; if a filename
             matches this exclude_regex, it is not scanned.
 
-        :type crontab: string
+        :type crontab: str
         :param crontab: crontab syntax, for periodic scanning.
 
         :type baseline_filename: str
@@ -87,7 +87,7 @@ class BaseTrackedRepo(object):
 
         The meta tracked file is in the format of self.__dict__
 
-        :type repo_name: string
+        :type repo_name: str
         :param repo_name: If the git URL is `git@github.com:yelp/detect-secrets`
             this value will be `yelp/detect-secrets`
 
@@ -114,19 +114,33 @@ class BaseTrackedRepo(object):
     def name(self):
         return self.storage.repository_name
 
-    def scan(self):
+    def scan(self, exclude_files_regex=None, exclude_lines_regex=None):
         """Clones the repo, and scans the git diff between last_commit_hash
         and HEAD.
 
         :raises: subprocess.CalledProcessError
+
+        :type exclude_files_regex: str|None
+        :param exclude_files_regex: A regex matching filenames to skip over.
+
+        :type exclude_lines: str|None
+        :param exclude_lines: A regex matching lines to skip over.
 
         :rtype: SecretsCollection
         :returns: secrets found.
         """
         self.storage.clone_and_pull_master()
 
-        default_plugins = initialize_plugins.from_parser_builder(self.plugin_config)
-        secrets = SecretsCollection(default_plugins, self.exclude_regex)
+        default_plugins = initialize_plugins.from_parser_builder(
+            self.plugin_config,
+            exclude_lines_regex=exclude_lines_regex,
+        )
+        # Issue 17: Ignoring self.exclude_regex, using the server scan CLI arg
+        secrets = SecretsCollection(
+            plugins=default_plugins,
+            exclude_files=exclude_files_regex,
+            exclude_lines=exclude_lines_regex,
+        )
 
         try:
             diff = self.storage.get_diff(self.last_commit_hash)

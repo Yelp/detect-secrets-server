@@ -7,7 +7,7 @@ from detect_secrets_server.repos.factory import tracked_repo_factory
 
 try:
     FileNotFoundError
-except NameError:
+except NameError:  # pragma: no cover
     FileNotFoundError = IOError
 
 
@@ -26,7 +26,10 @@ def scan_repo(args):
         log.error('Unable to find repo: %s', args.repo)
         return 1
 
-    secrets = repo.scan()
+    secrets = repo.scan(
+        exclude_files_regex=args.exclude_files,
+        exclude_lines_regex=args.exclude_lines,
+    )
 
     if len(secrets.data) > 0:
         _alert_on_secrets_found(repo, secrets.json(), args.output_hook)
