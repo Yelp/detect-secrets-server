@@ -135,7 +135,7 @@ class BaseTrackedRepo(object):
             self.plugin_config,
             exclude_lines_regex=exclude_lines_regex,
         )
-        # Issue 17: Ignoring self.exclude_regex, using the server scan CLI arg
+        # TODO Issue 17: Ignoring self.exclude_regex, using the server scan CLI arg
         secrets = SecretsCollection(
             plugins=default_plugins,
             exclude_files=exclude_files_regex,
