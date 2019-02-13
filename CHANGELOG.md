@@ -25,30 +25,53 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+### 0.2.5
+
+##### February 12th, 2019
+
+#### :tada: New Features
+
+* Added `--exclude-files` and `--exclude-lines` args to scan ([#18])
+* Added git commit to secrets before calling `output_hook.alert` ([#15])
+
+[#15]: https://github.com/Yelp/detect-secrets-server/pull/15
+
+#### :boom: Breaking Changes
+
+* Started to ignore the `exclude_regex` in repo metadata when scanning as a short-term solution for [Issue 17](https://github.com/Yelp/detect-secrets-server/issues/17) ([#18])
+
+[#18]: https://github.com/Yelp/detect-secrets-server/pull/18
+
+
 ### 0.2.4
 
-##### Jan 14, 2019
+##### January 14th, 2019
 
-* Bug fix: add/scan now handles non SSH urls for git cloning. See
-  https://github.com/Yelp/detect-secrets-server/issues/13 for more details.
+#### :bug: Bugfixes
+
+* `add` and `scan` now handle non-SSH urls for git cloning. See
+  [Issue 13](https://github.com/Yelp/detect-secrets-server/issues/13) for more details.
+
 
 ### 0.2.2
 
-##### Jan 11, 2019
+##### January 11th, 2019
 
 * Bumped version of `detect-secrets` to 0.11.4, so that we can leverage the
   new `AWSKeyDetector` and the `KeywordDetector`.
 
+
 ### 0.2.1
 
-##### Jan 10, 2019
+##### January 10th, 2019
 
 * Added support for delegating state management to output hooks, using the
   flag `--always-update-state`.
 
+
 ### 0.2.0
 
-##### Jan 09, 2019
+##### January 09th, 2019
 
 #### :boom: Breaking Changes
 
