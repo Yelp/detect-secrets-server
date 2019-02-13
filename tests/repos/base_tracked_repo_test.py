@@ -69,6 +69,43 @@ class TestScan(object):
         # It matches both HexHighEntropyString and AWSKeyDetector
         assert len(secrets.data['examples/aws_credentials.json']) == 2
 
+    def test_exclude_files(self, mock_logic, mock_rootdir):
+        repo = mock_logic()
+        with mock_git_calls(*self.git_calls(mock_rootdir)):
+            secrets = repo.scan(exclude_files_regex=r'aws_credentials.json$')
+
+        assert 'examples/aws_credentials.json' not in secrets.data
+
+    @pytest.mark.parametrize(
+        'exclude_lines_regex, expected_line_number',
+        [
+            (
+                r'accessKeyId',
+                3
+            ),
+            (
+                r'secretAccessKey',
+                2,
+            ),
+        ],
+    )
+    def test_exclude_lines(
+        self,
+        mock_logic,
+        mock_rootdir,
+        exclude_lines_regex,
+        expected_line_number,
+    ):
+        repo = mock_logic()
+        with mock_git_calls(*self.git_calls(mock_rootdir)):
+            secrets = repo.scan(exclude_lines_regex=exclude_lines_regex)
+
+        assert len(secrets.data) == 1
+        assert len(secrets.data['examples/aws_credentials.json']) == 1
+
+        for _, secret in secrets.data['examples/aws_credentials.json'].items():
+            assert secret.lineno == expected_line_number
+
     def test_unable_to_find_baseline(self, mock_logic, mock_rootdir):
         calls = self.git_calls(mock_rootdir)
         calls[-1] = SubprocessMock(
@@ -211,7 +248,7 @@ class TestUpdate(object):
 class TestSave(object):
 
     @pytest.mark.parametrize(
-        'override_level,is_file,mocked_input',
+        'override_level, is_file, mocked_input',
         [
             # OverrideLevel doesn't matter if no file exists.
             (OverrideLevel.NEVER, False, '',),

@@ -66,16 +66,17 @@ class TestInitialize(object):
                 sha='',
                 crontab='0 0 * * *',
                 plugins={
-                    'HexHighEntropyString': {
-                        'hex_limit': 3,
-                    },
+                    'AWSKeyDetector': {},
                     'Base64HighEntropyString': {
                         'base64_limit': 4.5,
                     },
-                    'PrivateKeyDetector': {},
                     'BasicAuthDetector': {},
+                    'HexHighEntropyString': {
+                        'hex_limit': 3,
+                    },
                     'KeywordDetector': {},
-                    'AWSKeyDetector': {},
+                    'PrivateKeyDetector': {},
+                    'SlackDetector': {},
                 },
                 rootdir=mock_rootdir,
                 baseline_filename=None,
@@ -167,15 +168,17 @@ class TestInitialize(object):
                 sha='',
                 crontab='* * 4 * *',
                 plugins={
-                    'HexHighEntropyString': {
-                        'hex_limit': 4.0,
-                    },
+                    # (No PrivateKeyDetector)
+                    'AWSKeyDetector': {},
                     'Base64HighEntropyString': {
                         'base64_limit': 2.0,
                     },
                     'BasicAuthDetector': {},
+                    'HexHighEntropyString': {
+                        'hex_limit': 4.0,
+                    },
                     'KeywordDetector': {},
-                    'AWSKeyDetector': {},
+                    'SlackDetector': {},
                 },
                 rootdir=mock_rootdir,
                 baseline_filename='baseline.file',

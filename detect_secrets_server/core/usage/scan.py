@@ -40,6 +40,25 @@ class ScanOptions(CommonOptions):
             ),
         )
 
+        self.parser.add_argument(
+            '--exclude-files',
+            type=str,
+            help=(
+                'Filenames that match this regex will be ignored when '
+                'scanning for secrets.'
+            ),
+            metavar='REGEX',
+        )
+        self.parser.add_argument(
+            '--exclude-lines',
+            type=str,
+            help=(
+                'Lines that match this regex will be ignored when '
+                'scanning for secrets.'
+            ),
+            metavar='REGEX',
+        )
+
         self.add_local_flag()
         for option in [PluginOptions, OutputOptions]:
             option(self.parser).add_arguments()

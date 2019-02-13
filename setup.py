@@ -25,7 +25,7 @@ setup(
         'entropy-checks'
     ],
     install_requires=[
-        'detect-secrets>=0.11.4',
+        'detect-secrets>=0.12.0',
         'pyyaml',
         'unidiff',
         'python-crontab',

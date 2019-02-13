@@ -18,6 +18,7 @@ def metadata_factory(repo, json=False, **kwargs):
         "crontab": "0 0 * * *",
         "exclude_regex": None,
         "plugins": {
+            "AWSKeyDetector": {},
             "Base64HighEntropyString": {
                 "base64_limit": 4.5,
             },
@@ -25,9 +26,9 @@ def metadata_factory(repo, json=False, **kwargs):
             "HexHighEntropyString": {
                 "hex_limit": 3,
             },
-            "PrivateKeyDetector": {},
             "KeywordDetector": {},
-            "AWSKeyDetector": {},
+            "PrivateKeyDetector": {},
+            "SlackDetector": {}
         },
         "repo": repo,
         "sha": 'sha256-hash',
