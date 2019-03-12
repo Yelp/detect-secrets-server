@@ -85,9 +85,6 @@ class TestMain(object):
                     directory,
                 ),
             ),
-            SubprocessMock(
-                expected_input='git pull',
-            ),
             # Since there is no prior sha to retrieve
             SubprocessMock(
                 expected_input='git rev-parse HEAD',
@@ -102,14 +99,11 @@ class TestMain(object):
         with mock_git_calls(
             # Getting latest changes
             SubprocessMock(
-                expected_input=(
-                    'git clone https://github.com/Yelp/detect-secrets {} --bare'
-                ).format(
-                    directory,
-                ),
+                expected_input='git rev-parse --abbrev-ref HEAD',
+                mocked_output='master',
             ),
             SubprocessMock(
-                expected_input='git pull',
+                expected_input='git fetch --quiet origin master',
             ),
             # Getting relevant diff
             SubprocessMock(

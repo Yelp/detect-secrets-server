@@ -190,25 +190,17 @@ class TestScan(object):
         """We need to do a bunch of mocking, because there's a lot of git
         operations. This function handles all that.
         """
-        tracked_location = '{}/repos/{}'.format(
-            mock_rootdir,
-            FileStorage.hash_filename('yelp/detect-secrets'),
-        )
-
         with open('test_data/sample.diff') as f:
             diff_content = f.read()
 
         return [
-            # clone and pull master
+            # fetching latest changes
             SubprocessMock(
-                expected_input=(
-                    'git clone git@github.com:yelp/detect-secrets {} --bare'.format(
-                        tracked_location,
-                    )
-                ),
+                expected_input='git rev-parse --abbrev-ref HEAD',
+                mocked_output='master',
             ),
             SubprocessMock(
-                expected_input='git pull',
+                expected_input='git fetch --quiet origin master',
             ),
 
             # get diff (filtering out ignored file extensions)

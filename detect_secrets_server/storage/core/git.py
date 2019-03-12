@@ -48,10 +48,13 @@ def clone_repo_to_location(repo, directory):
             raise
 
 
-def pull_master(directory):
+def fetch_new_changes(directory):
     _git(
         directory,
-        'pull',
+        'fetch',
+        '--quiet',
+        'origin',
+        _get_main_branch(directory),
     )
 
 

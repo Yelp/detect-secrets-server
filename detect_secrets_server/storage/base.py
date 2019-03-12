@@ -74,13 +74,14 @@ class BaseStorage(object):
         """Human friendly name of git repository tracked."""
         return self.get_repo_name(self.repo_url)
 
-    def clone_and_pull_master(self):
+    def clone(self):
         git.clone_repo_to_location(
             self.repo_url,
             self._repo_location,
         )
 
-        git.pull_master(self._repo_location)
+    def fetch_new_changes(self):
+        git.fetch_new_changes(self._repo_location)
 
     def get_diff(self, from_sha):
         try:
@@ -212,7 +213,7 @@ class LocalGitRepository(BaseStorage):
             git.get_remote_url(path),
         )
 
-    def clone_and_pull_master(self):
+    def clone(self):
         """The assumption is, if you are scanning a local git repository,
         then you are "actively" working on it. Therefore, this module will
         not bear the responsibility of auto-updating the repo with `git pull`.

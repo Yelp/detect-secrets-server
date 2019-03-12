@@ -239,9 +239,6 @@ class TestAddRepo(object):
                 expected_input='git clone {} {} --bare'.format(repo, directory),
             ),
             SubprocessMock(
-                expected_input='git pull',
-            ),
-            SubprocessMock(
                 expected_input='git rev-parse HEAD',
                 mocked_output='mocked_sha',
             ),

@@ -115,7 +115,7 @@ class BaseTrackedRepo(object):
         return self.storage.repository_name
 
     def scan(self, exclude_files_regex=None, exclude_lines_regex=None):
-        """Clones the repo, and scans the git diff between last_commit_hash
+        """Fetches latest changes, and scans the git diff between last_commit_hash
         and HEAD.
 
         :raises: subprocess.CalledProcessError
@@ -129,7 +129,7 @@ class BaseTrackedRepo(object):
         :rtype: SecretsCollection
         :returns: secrets found.
         """
-        self.storage.clone_and_pull_master()
+        self.storage.fetch_new_changes()
 
         default_plugins = initialize_plugins.from_parser_builder(
             self.plugin_config,
