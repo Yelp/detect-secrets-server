@@ -107,7 +107,7 @@ class TestMain(object):
             ),
             # Getting relevant diff
             SubprocessMock(
-                expected_input='git diff {} HEAD --name-only'.format(mocked_sha),
+                expected_input='git diff {} HEAD --name-only --diff-filter ACM'.format(mocked_sha),
                 mocked_output='filenameA',
             ),
             SubprocessMock(

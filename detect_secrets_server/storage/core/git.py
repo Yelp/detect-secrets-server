@@ -139,6 +139,7 @@ def _filter_filenames_from_diff(directory, last_commit_hash):
         last_commit_hash,
         'HEAD',
         '--name-only',
+        '--diff-filter', 'ACM',
     ).splitlines()
 
     return [

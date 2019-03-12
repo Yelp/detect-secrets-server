@@ -205,7 +205,7 @@ class TestScan(object):
 
             # get diff (filtering out ignored file extensions)
             SubprocessMock(
-                expected_input='git diff sha256-hash HEAD --name-only',
+                expected_input='git diff sha256-hash HEAD --name-only --diff-filter ACM',
                 mocked_output='examples/aws_credentials.json',
             ),
             SubprocessMock(
