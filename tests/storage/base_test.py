@@ -79,11 +79,8 @@ class TestBaseStorage(object):
                 b'fatal: destination path \'blah\' already exists',
                 mock_rootdir,
             ),
-            SubprocessMock(
-                expected_input='git pull',
-            ),
         ):
-            repo.clone_and_pull_master()
+            repo.clone()
 
     def test_clone_repo_something_else_went_wrong(self, mock_rootdir, base_storage):
         with assert_directories_created():
@@ -98,7 +95,7 @@ class TestBaseStorage(object):
         ), pytest.raises(
             subprocess.CalledProcessError
         ):
-            repo.clone_and_pull_master()
+            repo.clone()
 
     @staticmethod
     def construct_subprocess_mock_git_clone(repo, mocked_output, mock_rootdir):
@@ -144,11 +141,11 @@ class TestLocalGitRepository(object):
         ), assert_directories_created():
             assert local_storage.setup(repo).repository_name == name
 
-    def test_clone_and_pull_master(self, local_storage):
+    def test_clone(self, local_storage):
         # We're asserting that nothing is run in this case.
         with mock_git_calls(), assert_directories_created():
             local_storage.setup('git@github.com:yelp/detect-secrets')\
-                .clone_and_pull_master()
+                .clone()
 
 
 class TestGetFilepathSafe(object):

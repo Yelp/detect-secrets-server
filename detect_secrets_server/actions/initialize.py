@@ -122,7 +122,7 @@ def _clone_and_save_repo(repo):
     :param repo: repo to clone (if appropriate) and save
     """
     # Clone repo, if needed.
-    repo.storage.clone_and_pull_master()
+    repo.storage.clone()
 
     # Make the last_commit_hash of repo point to HEAD
     if not repo.last_commit_hash:
