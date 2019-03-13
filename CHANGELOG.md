@@ -21,9 +21,35 @@ your support! :star:
 #### :bug: Bugfixes
 #### :snake: Miscellaneous
 
-[#xxxx]: https://github.com/Yelp/detect-secrets/pull/xxxx
+[#xxxx]: https://github.com/Yelp/detect-secrets-server/pull/xxxx
 [@xxxx]: https://github.com/xxxx
 -->
+
+### 0.2.7
+
+##### March 13th, 2019
+
+#### :tada: New Features
+
+* Added a `--diff-filter` optimization, so we only scan added, copied or modified files ([#22])
+
+[#22]: https://github.com/Yelp/detect-secrets-server/pull/22
+
+#### :bug: Bugfixes
+
+* Fixed a bug where, `scan` on bare repositories gave a `Your local changes to the following files would be overwritten by merge:` error ([#23])
+
+[#23]: https://github.com/Yelp/detect-secrets-server/pull/23
+
+
+### 0.2.6
+
+##### February 12th, 2019
+
+#### :bug: Bugfixes
+
+* [Fixed a bug where we were using an older version of `detect-secrets` in our `requirements-dev` `txt` files](https://github.com/Yelp/detect-secrets-server/commit/0ff9f095167e5090a8ebba1ddc4e7317b3c23800)
+
 
 ### 0.2.5
 
