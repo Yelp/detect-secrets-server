@@ -214,9 +214,13 @@ class LocalGitRepository(BaseStorage):
         )
 
     def clone(self):
+        """If it is locally on disk, no need to clone it."""
+        return
+
+    def fetch_new_changes(self):
         """The assumption is, if you are scanning a local git repository,
         then you are "actively" working on it. Therefore, this module will
-        not bear the responsibility of auto-updating the repo with `git pull`.
+        not bear the responsibility of auto-updating the repo with `git fetch`.
         """
         return
 
