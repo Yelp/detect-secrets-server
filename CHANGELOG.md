@@ -25,6 +25,17 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+### 0.2.8
+
+##### March 14th, 2019
+
+#### :bug: Bugfixes
+
+* Fixed a bug where we were `git fetch`ing for local git repositories ([#26])
+
+[#26]: https://github.com/Yelp/detect-secrets-server/pull/26
+
+
 ### 0.2.7
 
 ##### March 13th, 2019
