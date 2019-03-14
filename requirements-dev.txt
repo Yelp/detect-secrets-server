@@ -4,7 +4,7 @@ attrs==18.2.0
 cached-property==1.5.1
 cfgv==1.1.0
 coverage==4.5.2
-detect-secrets
+detect-secrets==0.12.0
 filelock==3.0.10
 identify==1.1.8
 importlib-metadata==0.8
