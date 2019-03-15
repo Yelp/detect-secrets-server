@@ -83,6 +83,7 @@ class TestScanRepo(object):
                         'hashed_secret': secret_hash,
                         'line_number': 5,
                         'author': 'khock',
+                        'commit': 'new_sha',
                     }],
                 },
             )
@@ -181,7 +182,7 @@ def get_subprocess_mocks(secrets, updates_repo):
         )
 
         subprocess_mocks.append(
-            # then, we get the blame info for that branch.
+            # then, we get the blame info for that branch
             SubprocessMock(
                 expected_input=(
                     'git blame master -L {},{} --show-email '
@@ -195,7 +196,16 @@ def get_subprocess_mocks(secrets, updates_repo):
             ),
         )
 
+        subprocess_mocks.append(
+            # and get the current HEAD.
+            SubprocessMock(
+                expected_input='git rev-parse HEAD',
+                mocked_output='new_sha',
+            ),
+        )
+
     if updates_repo:
+        # We also get the current HEAD when updating.
         subprocess_mocks.append(
             SubprocessMock(
                 expected_input='git rev-parse HEAD',

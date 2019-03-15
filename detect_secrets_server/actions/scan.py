@@ -82,9 +82,11 @@ def _set_authors_for_found_secrets(repo, secrets):
                 filename,
                 potential_secret_dict['line_number'],
             )
-
-            potential_secret_dict['author'] = \
+            potential_secret_dict['author'] = (
                 _extract_user_from_git_blame_info(blame_info)
+            )
+            # Set commit as current head when found, not when secret was added
+            potential_secret_dict['commit'] = repo.storage.get_last_commit_hash()
 
 
 def _extract_user_from_git_blame_info(info):
