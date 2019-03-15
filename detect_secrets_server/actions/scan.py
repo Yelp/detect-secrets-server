@@ -64,16 +64,15 @@ def _alert_on_secrets_found(repo, secrets, output_hook):
     """
     log.error('Secrets found in %s', repo.name)
 
-    _set_authors_and_commits_for_found_secrets(repo, secrets)
+    _set_authors_for_found_secrets(repo, secrets)
 
     output_hook.alert(repo.name, secrets)
 
 
-def _set_authors_and_commits_for_found_secrets(repo, secrets):
+def _set_authors_for_found_secrets(repo, secrets):
     """Use git blame to try and identify the user who committed the
-    potential secret, and the commit. This allows us to follow up
-    with a specific user if a secret is found, and reference the
-    exact commit that caused the alert.
+    potential secret. This allows us to follow up with a specific user if
+    a secret is found.
 
     Modifies secrets in-place.
     """
@@ -83,33 +82,24 @@ def _set_authors_and_commits_for_found_secrets(repo, secrets):
                 filename,
                 potential_secret_dict['line_number'],
             )
-            author, commit = (
-                _extract_author_and_commit_from_git_blame_info(blame_info)
+            potential_secret_dict['author'] = (
+                _extract_user_from_git_blame_info(blame_info)
             )
-            potential_secret_dict['author'] = author
-            potential_secret_dict['commit'] = commit
+            # Set commit as current head when found, not when secret was added
+            potential_secret_dict['commit'] = repo.storage.get_last_commit_hash()
 
 
-def _extract_author_and_commit_from_git_blame_info(blame_info):
+def _extract_user_from_git_blame_info(info):
     """As this tool is meant to be used in an enterprise setting, we assume
     that the email address of the committer uniquely identifies a given user.
 
-    :type blame_info: str
-    :param blame_info: output of `git blame` from git.py
-
-    :rtype: tuple(str, str)
-    :returns: author from author-mail and commit hash
+    This function extracts that information.
     """
-    blame_info = blame_info.split()
+    info = info.split()
 
-    # e.g. b5ce07a9b1a616330c1bf33799b6d06d1f9c6336 8 10 1
-    commit_line = blame_info[0]
-    commit_hash = commit_line.split()[0]
-
-    index_of_mail = blame_info.index('author-mail')
-    email = blame_info[index_of_mail + 1]  # e.g. `<khock@yelp.com>`
+    index_of_mail = info.index('author-mail')
+    email = info[index_of_mail + 1]     # Eg. `<khock@yelp.com>`
     index_of_at_symbol = email.index('@')
-    # This will skip the prefix `<`, and extract the user up to the `@` sign.
-    author = email[1:index_of_at_symbol]
 
-    return author, commit_hash
+    # This will skip the prefix `<`, and extract the user up to the `@` sign.
+    return email[1:index_of_at_symbol]
