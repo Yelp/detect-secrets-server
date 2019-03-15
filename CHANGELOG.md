@@ -25,6 +25,26 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+### 0.2.10
+
+##### March 14th, 2019
+
+#### :bug: Bugfixes
+
+* Fixed a bug where we were not assigning the commit of found secrets to HEAD ([#27])
+
+[#27]: https://github.com/Yelp/detect-secrets-server/pull/27
+
+
+### 0.2.9
+
+##### March 14th, 2019
+
+#### :snake: Miscellaneous
+
+* [Fixed](https://github.com/Yelp/detect-secrets-server/commit/472ba87ecc220be96f10477914b09da159d9bc04) an [internal issue](https://github.com/Yelp/venv-update)
+
+
 ### 0.2.8
 
 ##### March 14th, 2019
