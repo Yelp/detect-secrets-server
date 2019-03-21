@@ -1,5 +1,5 @@
 coverage
-detect-secrets>=0.12.0
+detect-secrets>=0.12.2
 mock
 PyYAML
 pre-commit
