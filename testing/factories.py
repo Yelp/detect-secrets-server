@@ -26,7 +26,9 @@ def metadata_factory(repo, json=False, **kwargs):
             "HexHighEntropyString": {
                 "hex_limit": 3,
             },
-            "KeywordDetector": {},
+            "KeywordDetector": {
+                'keyword_exclude': None
+            },
             "PrivateKeyDetector": {},
             "SlackDetector": {}
         },

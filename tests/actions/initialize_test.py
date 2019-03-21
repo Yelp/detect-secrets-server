@@ -74,7 +74,9 @@ class TestInitialize(object):
                     'HexHighEntropyString': {
                         'hex_limit': 3,
                     },
-                    'KeywordDetector': {},
+                    'KeywordDetector': {
+                        'keyword_exclude': None,
+                    },
                     'PrivateKeyDetector': {},
                     'SlackDetector': {},
                 },
@@ -168,7 +170,7 @@ class TestInitialize(object):
                 sha='',
                 crontab='* * 4 * *',
                 plugins={
-                    # (No PrivateKeyDetector)
+                    # (No PrivateKeyDetector due to being False above)
                     'AWSKeyDetector': {},
                     'Base64HighEntropyString': {
                         'base64_limit': 2.0,
@@ -177,7 +179,9 @@ class TestInitialize(object):
                     'HexHighEntropyString': {
                         'hex_limit': 4.0,
                     },
-                    'KeywordDetector': {},
+                    'KeywordDetector': {
+                        'keyword_exclude': None,
+                    },
                     'SlackDetector': {},
                 },
                 rootdir=mock_rootdir,
