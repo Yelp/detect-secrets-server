@@ -25,6 +25,16 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+
+### 0.2.11
+
+##### March 21st, 2019
+
+#### :tada: New Features
+
+* [Bumped version of `detect-secrets`](https://github.com/Yelp/detect-secrets-server/commit/bfe7295b3681f0fe9d6d4652fa9437aab5e2e664) from v0.12.0 to [v0.12.2](https://github.com/Yelp/detect-secrets/blob/master/CHANGELOG.md#v0122), primarily to improve performance
+
+
 ### 0.2.10
 
 ##### March 14th, 2019
@@ -114,6 +124,8 @@ your support! :star:
 
 ##### January 11th, 2019
 
+#### :tada: New Features
+
 * Bumped version of `detect-secrets` to 0.11.4, so that we can leverage the
   new `AWSKeyDetector` and the `KeywordDetector`.
 
@@ -121,6 +133,8 @@ your support! :star:
 ### 0.2.1
 
 ##### January 10th, 2019
+
+#### :tada: New Features
 
 * Added support for delegating state management to output hooks, using the
   flag `--always-update-state`.
