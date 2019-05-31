@@ -17,7 +17,7 @@ def get_storage_options():
 @lru_cache(maxsize=1)
 def should_enable_s3_options():  # pragma: no cover
     try:
-        import boto3    # noqa: F401
+        import boto3  # noqa: F401
         return True
     except ImportError:
         return False

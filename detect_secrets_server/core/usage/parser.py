@@ -36,7 +36,7 @@ class ServerParserBuilder(ParserBuilder):
             dest='action',
         )
 
-        for option in [AddOptions, ListOptions, InstallOptions, ScanOptions]:
+        for option in (AddOptions, ListOptions, InstallOptions, ScanOptions):
             option(subparser).add_arguments()
 
         return self

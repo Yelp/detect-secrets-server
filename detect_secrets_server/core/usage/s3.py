@@ -63,6 +63,10 @@ class S3Options(object):
 
         try:
             args.s3_config = args.s3_config[0]
+        except AttributeError:
+            raise argparse.ArgumentTypeError(
+                'Please pip install the `boto3` library.'
+            )
         except TypeError:
             # If nothing is specified, then args.s3_config == None.
             # This is sufficient for conditional logic to determine whether
@@ -96,7 +100,7 @@ class S3Options(object):
 
         creds = json_file(creds_filename)
 
-        # We don't need this anymore.
+        # We do not need these anymore.
         del args.s3_bucket
         del args.s3_prefix
         del args.s3_credentials_file
