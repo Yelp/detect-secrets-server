@@ -55,7 +55,7 @@ class BaseStorage(object):
             because we want to use this class without pinning it down
             to a repository.
 
-            Eg. We should be able to retrieve information about the
+            e.g. We should be able to retrieve information about the
             repo_url from a file, with delayed setup.
 
         :returns: self, for better chaining
