@@ -25,6 +25,25 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+### 0.2.12
+
+##### June 4th, 2019
+
+#### :bug: Bugfixes
+
+* Fixed a **very important bug** where we were not fetching changes for non-local repositories ([#30], thanks [@chetmancini], [@akshayatplivo], [@ajchida], [@rameshkumar-a]))
+* [Fixed a `UnidiffParseError: Hunk is shorter than expected` crash](https://github.com/Yelp/detect-secrets-server/pull/30/commits/bc0170045e3778446c0d68fb19b0dc58543602c2)
+
+#### :art: Display Changes
+
+* [Added a helpful error message for when a user tries to use S3 features without boto3 installed](https://github.com/Yelp/detect-secrets-server/commit/15525d4eb35dcd1b79e458cdf360ab9f5a77957c)
+
+[#30]: https://github.com/Yelp/detect-secrets-server/pull/30
+[@chetmancini]: https://github.com/chetmancini
+[@akshayatplivo]: https://github.com/akshayatplivo
+[@ajchida]: https://github.com/ajchida
+[@rameshkumar-a]: https://github.com/rameshkumar-a
+
 
 ### 0.2.11
 
