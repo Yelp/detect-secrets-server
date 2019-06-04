@@ -49,12 +49,17 @@ def clone_repo_to_location(repo, directory):
 
 
 def fetch_new_changes(directory):
+    main_branch = _get_main_branch(directory)
     _git(
         directory,
         'fetch',
         '--quiet',
         'origin',
-        _get_main_branch(directory),
+        '{}:{}'.format(
+            main_branch,
+            main_branch,
+        ),
+        '--force',
     )
 
 
@@ -87,13 +92,16 @@ def get_baseline_file(directory, filename):
 
 def get_diff(directory, last_commit_hash):
     """Returns the git diff between last commit hash, and HEAD."""
+    kwargs = {'should_strip_output': False}
     return _git(
         directory,
         'diff',
         last_commit_hash,
         'HEAD',
         '--',
-        *_filter_filenames_from_diff(directory, last_commit_hash)
+        *_filter_filenames_from_diff(directory, last_commit_hash),
+        # Python 2 made me do this
+        **kwargs
     )
 
 
@@ -149,17 +157,17 @@ def _filter_filenames_from_diff(directory, last_commit_hash):
     ]
 
 
-def _git(directory, *args):
+def _git(directory, *args, **kwargs):
     output = subprocess.check_output(
         [
             'git',
             '--git-dir', directory,
-
-            # Work-tree is required for some git commands, because of bare repos.
-            # However, it doesn't hurt to put it for all of them.
-            '--work-tree', '.',
         ] + list(args),
         stderr=subprocess.STDOUT
-    )
+    ).decode('utf-8', errors='ignore')
 
-    return output.decode('utf-8', 'ignore').strip()
+    # This is to fix https://github.com/matiasb/python-unidiff/issues/54
+    if not kwargs.get('should_strip_output', True):
+        return output
+
+    return output.strip()

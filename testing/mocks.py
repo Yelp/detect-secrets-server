@@ -70,7 +70,7 @@ def mock_git_calls(*cases):
 
         return case.mocked_output
 
-    def _mock_single_git_call(directory, *args):
+    def _mock_single_git_call(directory, *args, **kwargs):
         return _mock_subprocess_git_call(['git'] + list(args))
 
     # mock_subprocess is needed for `clone_repo_to_location`.
