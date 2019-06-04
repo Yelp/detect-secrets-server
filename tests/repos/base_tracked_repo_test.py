@@ -200,7 +200,7 @@ class TestScan(object):
                 mocked_output='master',
             ),
             SubprocessMock(
-                expected_input='git fetch --quiet origin master',
+                expected_input='git fetch --quiet origin master:master',
             ),
 
             # get diff (filtering out ignored file extensions)

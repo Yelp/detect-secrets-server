@@ -103,7 +103,7 @@ class TestMain(object):
                 mocked_output='master',
             ),
             SubprocessMock(
-                expected_input='git fetch --quiet origin master',
+                expected_input='git fetch --quiet origin master:master',
             ),
             # Getting relevant diff
             SubprocessMock(

@@ -49,12 +49,16 @@ def clone_repo_to_location(repo, directory):
 
 
 def fetch_new_changes(directory):
+    main_branch = _get_main_branch(directory)
     _git(
         directory,
         'fetch',
         '--quiet',
         'origin',
-        _get_main_branch(directory),
+        '{}:{}'.format(
+            main_branch,
+            main_branch,
+        ),
     )
 
 
@@ -154,10 +158,6 @@ def _git(directory, *args):
         [
             'git',
             '--git-dir', directory,
-
-            # Work-tree is required for some git commands, because of bare repos.
-            # However, it doesn't hurt to put it for all of them.
-            '--work-tree', '.',
         ] + list(args),
         stderr=subprocess.STDOUT
     )
