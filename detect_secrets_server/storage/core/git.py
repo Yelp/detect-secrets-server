@@ -59,6 +59,7 @@ def fetch_new_changes(directory):
             main_branch,
             main_branch,
         ),
+        '--force',
     )
 
 
