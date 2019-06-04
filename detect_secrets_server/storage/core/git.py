@@ -91,13 +91,16 @@ def get_baseline_file(directory, filename):
 
 def get_diff(directory, last_commit_hash):
     """Returns the git diff between last commit hash, and HEAD."""
+    kwargs = {'should_strip_output': False}
     return _git(
         directory,
         'diff',
         last_commit_hash,
         'HEAD',
         '--',
-        *_filter_filenames_from_diff(directory, last_commit_hash)
+        *_filter_filenames_from_diff(directory, last_commit_hash),
+        # Python 2 made me do this
+        **kwargs
     )
 
 
@@ -153,13 +156,17 @@ def _filter_filenames_from_diff(directory, last_commit_hash):
     ]
 
 
-def _git(directory, *args):
+def _git(directory, *args, **kwargs):
     output = subprocess.check_output(
         [
             'git',
             '--git-dir', directory,
         ] + list(args),
         stderr=subprocess.STDOUT
-    )
+    ).decode('utf-8', errors='ignore')
 
-    return output.decode('utf-8', 'ignore').strip()
+    # This is to fix https://github.com/matiasb/python-unidiff/issues/54
+    if not kwargs.get('should_strip_output', True):
+        return output
+
+    return output.strip()
