@@ -67,6 +67,7 @@ class TestInitialize(object):
                 crontab='0 0 * * *',
                 plugins={
                     'AWSKeyDetector': {},
+                    'ArtifactoryDetector': {},
                     'Base64HighEntropyString': {
                         'base64_limit': 4.5,
                     },
@@ -74,11 +75,13 @@ class TestInitialize(object):
                     'HexHighEntropyString': {
                         'hex_limit': 3,
                     },
+                    'MailchimpDetector': {},
                     'KeywordDetector': {
                         'keyword_exclude': None,
                     },
                     'PrivateKeyDetector': {},
                     'SlackDetector': {},
+                    'StripeDetector': {},
                 },
                 rootdir=mock_rootdir,
                 baseline_filename=None,
@@ -171,6 +174,7 @@ class TestInitialize(object):
                 crontab='* * 4 * *',
                 plugins={
                     # (No PrivateKeyDetector due to being False above)
+                    'ArtifactoryDetector': {},
                     'AWSKeyDetector': {},
                     'Base64HighEntropyString': {
                         'base64_limit': 2.0,
@@ -179,10 +183,12 @@ class TestInitialize(object):
                     'HexHighEntropyString': {
                         'hex_limit': 4.0,
                     },
+                    'MailchimpDetector': {},
                     'KeywordDetector': {
                         'keyword_exclude': None,
                     },
                     'SlackDetector': {},
+                    'StripeDetector': {},
                 },
                 rootdir=mock_rootdir,
                 baseline_filename='baseline.file',

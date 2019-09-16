@@ -19,6 +19,7 @@ def metadata_factory(repo, json=False, **kwargs):
         "exclude_regex": None,
         "plugins": {
             "AWSKeyDetector": {},
+            "ArtifactoryDetector": {},
             "Base64HighEntropyString": {
                 "base64_limit": 4.5,
             },
@@ -29,8 +30,10 @@ def metadata_factory(repo, json=False, **kwargs):
             "KeywordDetector": {
                 'keyword_exclude': None
             },
+            "MailchimpDetector": {},
             "PrivateKeyDetector": {},
-            "SlackDetector": {}
+            "SlackDetector": {},
+            "StripeDetector": {},
         },
         "repo": repo,
         "sha": 'sha256-hash',

@@ -81,6 +81,7 @@ class TestScanRepo(object):
                     'file_with_secrets': [{
                         'type': 'type',
                         'hashed_secret': secret_hash,
+                        'is_verified': False,
                         'line_number': 5,
                         'author': 'khock',
                         'commit': 'new_sha',
