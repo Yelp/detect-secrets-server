@@ -25,8 +25,16 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
-### 0.2.12
+### v0.2.6
+##### September 16th, 2019
 
+#### :snake: Miscellaneous
+
+- Bumped the detect-secrets from version [`v0.12.2`](https://github.com/Yelp/detect-secrets/blob/master/CHANGELOG.md#v0122)  to [`v0.12.6`](https://github.com/Yelp/detect-secrets/blob/master/CHANGELOG.md#v0126)
+
+
+
+### v0.2.12
 ##### June 4th, 2019
 
 #### :bug: Bugfixes
@@ -45,17 +53,17 @@ your support! :star:
 [@rameshkumar-a]: https://github.com/rameshkumar-a
 
 
-### 0.2.11
 
+### v0.2.11
 ##### March 21st, 2019
 
 #### :tada: New Features
 
-* [Bumped version of `detect-secrets`](https://github.com/Yelp/detect-secrets-server/commit/bfe7295b3681f0fe9d6d4652fa9437aab5e2e664) from v0.12.0 to [v0.12.2](https://github.com/Yelp/detect-secrets/blob/master/CHANGELOG.md#v0122), primarily to improve performance
+* [Bumped version of `detect-secrets`](https://github.com/Yelp/detect-secrets-server/commit/bfe7295b3681f0fe9d6d4652fa9437aab5e2e664) from [`v0.12.0`](https://github.com/Yelp/detect-secrets/blob/master/CHANGELOG.md#v0120) to [v0.12.2](https://github.com/Yelp/detect-secrets/blob/master/CHANGELOG.md#v0122), primarily to improve performance
 
 
-### 0.2.10
 
+### v0.2.10
 ##### March 14th, 2019
 
 #### :bug: Bugfixes
@@ -65,8 +73,8 @@ your support! :star:
 [#27]: https://github.com/Yelp/detect-secrets-server/pull/27
 
 
-### 0.2.9
 
+### v0.2.9
 ##### March 14th, 2019
 
 #### :snake: Miscellaneous
@@ -74,8 +82,8 @@ your support! :star:
 * [Fixed](https://github.com/Yelp/detect-secrets-server/commit/472ba87ecc220be96f10477914b09da159d9bc04) an [internal issue](https://github.com/Yelp/venv-update)
 
 
-### 0.2.8
 
+### v0.2.8
 ##### March 14th, 2019
 
 #### :bug: Bugfixes
@@ -85,8 +93,8 @@ your support! :star:
 [#26]: https://github.com/Yelp/detect-secrets-server/pull/26
 
 
-### 0.2.7
 
+### v0.2.7
 ##### March 13th, 2019
 
 #### :tada: New Features
@@ -102,8 +110,8 @@ your support! :star:
 [#23]: https://github.com/Yelp/detect-secrets-server/pull/23
 
 
-### 0.2.6
 
+### v0.2.6
 ##### February 12th, 2019
 
 #### :bug: Bugfixes
@@ -111,8 +119,8 @@ your support! :star:
 * [Fixed a bug where we were using an older version of `detect-secrets` in our `requirements-dev` `txt` files](https://github.com/Yelp/detect-secrets-server/commit/0ff9f095167e5090a8ebba1ddc4e7317b3c23800)
 
 
-### 0.2.5
 
+### v0.2.5
 ##### February 12th, 2019
 
 #### :tada: New Features
@@ -129,8 +137,8 @@ your support! :star:
 [#18]: https://github.com/Yelp/detect-secrets-server/pull/18
 
 
-### 0.2.4
 
+### v0.2.4
 ##### January 14th, 2019
 
 #### :bug: Bugfixes
@@ -139,8 +147,8 @@ your support! :star:
   [Issue 13](https://github.com/Yelp/detect-secrets-server/issues/13) for more details.
 
 
-### 0.2.2
 
+### v0.2.2
 ##### January 11th, 2019
 
 #### :tada: New Features
@@ -149,8 +157,8 @@ your support! :star:
   new `AWSKeyDetector` and the `KeywordDetector`.
 
 
-### 0.2.1
 
+### v0.2.1
 ##### January 10th, 2019
 
 #### :tada: New Features
@@ -159,8 +167,8 @@ your support! :star:
   flag `--always-update-state`.
 
 
-### 0.2.0
 
+### v0.2.0
 ##### January 09th, 2019
 
 #### :boom: Breaking Changes
