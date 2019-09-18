@@ -82,8 +82,8 @@ class ScanOptions(CommonOptions):
                 'Can\'t use --dry-run with --always-update-state.',
             )
         if (args.always_run_output_hook and (None is args.output_hook)):
-           raise argparse.ArgumentTypeError(
-                    '--always-run-output-hook must be run with --output-hook',
+            raise argparse.ArgumentTypeError(
+                '--always-run-output-hook must be run with --output-hook',
             )
 
         for option in [CommonOptions, OutputOptions]:
