@@ -59,6 +59,15 @@ class ScanOptions(CommonOptions):
             metavar='REGEX',
         )
 
+        self.parser.add_argument(
+            '--always-run-output-hook',
+            action='store_true',
+            help=(
+                'Always run the output hook, even if no issues have been found.'
+                'must be run with the --output-hook option'
+            ),
+        )
+
         self.add_local_flag()
         for option in [PluginOptions, OutputOptions]:
             option(self.parser).add_arguments()
@@ -71,6 +80,10 @@ class ScanOptions(CommonOptions):
         if args.dry_run and args.always_update_state:
             raise argparse.ArgumentTypeError(
                 'Can\'t use --dry-run with --always-update-state.',
+            )
+        if (args.always_run_output_hook and (None is args.output_hook)):
+            raise argparse.ArgumentTypeError(
+                '--always-run-output-hook must be run with --output-hook',
             )
 
         for option in [CommonOptions, OutputOptions]:
