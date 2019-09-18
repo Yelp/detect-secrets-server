@@ -31,7 +31,7 @@ def scan_repo(args):
         exclude_lines_regex=args.exclude_lines,
     )
 
-    if (len(secrets.data) > 0) or (args.always_run_output_hook):
+    if (len(secrets.data) > 0) or args.always_run_output_hook:
         _alert_on_secrets_found(repo, secrets.json(), args.output_hook)
 
     if args.always_update_state or (
