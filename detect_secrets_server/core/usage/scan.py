@@ -63,8 +63,8 @@ class ScanOptions(CommonOptions):
             '--always-run-output-hook',
             action='store_true',
             help=(
-                'Always run the output hook, even if no issues have been found.'
-                'must be run with the --output-hook option'
+                'Always run the output hook, even if no issues have been found, '
+                'must be run with the --output-hook option.'
             ),
         )
 
