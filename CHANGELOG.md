@@ -25,7 +25,22 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
-### v0.2.6
+### v0.2.14
+##### September 19th, 2019
+
+#### :tada: New Features
+
+* Added an `--always-run-output-hook` flag ([#34], thanks [@mindfunk])
+
+#### :bug: Bugfixes
+
+* [Fixed a bug where we were never skipping ignored file extensions](https://github.com/Yelp/detect-secrets-server/commit/1c0d5120b979d68f357eb473bf476a66b4899ce9)
+
+[#34]: https://github.com/Yelp/detect-secrets-server/pull/34
+
+
+
+### v0.2.13
 ##### September 16th, 2019
 
 #### :snake: Miscellaneous
@@ -205,3 +220,11 @@ your support! :star:
   of tracked repositories (git cloning, baseline comparisons) with the method of
   storing server metadata, for cleaner code, decoupled architecture, and
   modularity.
+
+
+
+# Special thanks to our awesome contributors! :clap:
+
+- [@mindfunk]
+
+[@mindfunk]: https://github.com/mindfunk
