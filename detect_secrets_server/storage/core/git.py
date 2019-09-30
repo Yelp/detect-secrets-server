@@ -93,13 +93,30 @@ def get_baseline_file(directory, filename):
 def get_diff(directory, last_commit_hash):
     """Returns the git diff between last commit hash, and HEAD."""
     kwargs = {'should_strip_output': False}
-    return _git(
+    git_args = [
         directory,
         'diff',
         last_commit_hash,
         'HEAD',
-        '--',
-        *_filter_filenames_from_diff(directory, last_commit_hash),
+    ]
+    filenames_to_include_in_diff = _filter_filenames_from_diff(directory, last_commit_hash)
+    if (
+        filenames_to_include_in_diff
+        and
+        # This happens when there are too many files in the diff
+        # e.g. 'warning: inexact rename detection was skipped due to too many files.'
+        # We choose to not include specific files out in this case
+        # Because if we did, we would later get a
+        # `OSError: [Errno 7] Argument list too long`
+        # when including the list of files.
+        not filenames_to_include_in_diff[-1].startswith('warning:')
+    ):
+        git_args.extend(
+            ['--'] + filenames_to_include_in_diff,
+        )
+
+    return _git(
+        *git_args,
         # Python 2 made me do this
         **kwargs
     )

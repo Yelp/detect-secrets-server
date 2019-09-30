@@ -9,7 +9,7 @@
     -   id: name-tests-test
         exclude: tests/util
     -   id: flake8
-        args: ['--ignore=E501']
+        args: ['--ignore=E501,W503,W504']
 -   repo: https://github.com/asottile/reorder_python_imports
     sha: v0.3.5
     hooks:
