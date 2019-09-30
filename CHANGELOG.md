@@ -25,6 +25,17 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+### v0.2.15
+##### September 30th, 2019
+
+#### :bug: Bugfixes
+
+* Fixed a bug where we were would crash with a `OSError: [Errno 7] Argument list too long` if there were too many files in the git diff ([#35])
+
+[#35]: https://github.com/Yelp/detect-secrets-server/pull/35
+
+
+
 ### v0.2.14
 ##### September 19th, 2019
 
@@ -223,7 +234,7 @@ your support! :star:
 
 
 
-# Special thanks to our awesome contributors! :clap:
+# Special thanks to our awesome contributor! :clap:
 
 - [@mindfunk]
 
