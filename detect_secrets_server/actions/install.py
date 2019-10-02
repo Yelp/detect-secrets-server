@@ -30,10 +30,11 @@ def _install_cron(args):
     jobs = []
     for repo, is_local in list_tracked_repositories(args):
         jobs.append(
-            '{}    detect-secrets-server scan {} {} {}'.format(
+            '{}    detect-secrets-server scan {} {} {} {}'.format(
                 repo['crontab'],
                 repo['repo'],
                 '--local' if is_local else '',
+                '--root-dir {}'.format(args.root_dir) if args.root_dir else '',
                 args.output_hook_command,
             ).strip()
         )
