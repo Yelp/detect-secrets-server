@@ -30,7 +30,6 @@ class TestInstallCron(object):
 
     def test_writes_crontab(self, mock_crontab, mock_rootdir, mock_metadata):
         args = self.parse_args(mock_rootdir)
-
         with mock_metadata(
             remote_files=(
                 metadata_factory(
@@ -48,9 +47,9 @@ class TestInstallCron(object):
             install_mapper(args)
 
         assert mock_crontab.content == textwrap.dedent("""
-            0 0 * * *    detect-secrets-server scan git@github.com:yelp/detect-secrets
-            0 0 * * *    detect-secrets-server scan examples --local
-        """)[1:-1]
+            0 0 * * *    detect-secrets-server scan git@github.com:yelp/detect-secrets --root-dir {}
+            0 0 * * *    detect-secrets-server scan examples --local --root-dir {}
+        """).format(mock_rootdir, mock_rootdir)[1:-1]
         mock_crontab.write_to_user.assert_called_with(user=True)
 
     def test_crontab_writes_with_output_hook(
@@ -77,7 +76,8 @@ class TestInstallCron(object):
 
         assert mock_crontab.content == (
             '1 2 3 4 5    detect-secrets-server scan git@github.com:yelp/detect-secrets'
-            '  --output-hook examples/standalone_hook.py'
+            ' --root-dir {}'
+            ' --output-hook examples/standalone_hook.py'.format(mock_rootdir)
         )
         mock_crontab.write_to_user.assert_called_with(user=True)
 
@@ -107,8 +107,8 @@ class TestInstallCron(object):
         assert mock_crontab.content == textwrap.dedent("""
             * * * * *    some_content_here
 
-            1 2 3 4 5    detect-secrets-server scan examples --local
-        """)[1:-1]
+            1 2 3 4 5    detect-secrets-server scan examples --local --root-dir {}
+        """).format(mock_rootdir)[1:-1]
 
 
 @pytest.fixture
