@@ -232,8 +232,14 @@ class LocalGitRepository(BaseStorage):
     def _repo_location(self):
         """When we're performing git commands on a local repository, we need
         to reference the `/.git` folder within the cloned git repo.
+
+        Unless it is a local bare repo.
         """
-        return os.path.join(self.repo_url, '.git')
+        inner_git_dir = os.path.join(self.repo_url, '.git')
+        if os.path.exists(inner_git_dir):
+            return inner_git_dir
+        # Bare repo
+        return self.repo_url
 
 
 def get_filepath_safe(prefix, file):
