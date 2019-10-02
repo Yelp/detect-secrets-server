@@ -25,6 +25,15 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+### v0.2.16
+##### October 2nd, 2019
+
+#### :tada: New Features
+
+* [Added handling of local bare repos](https://github.com/Yelp/detect-secrets-server/commit/99d4a1e384c07a77a2d32fd9febe8c897d94c922)
+
+
+
 ### v0.2.15
 ##### September 30th, 2019
 
