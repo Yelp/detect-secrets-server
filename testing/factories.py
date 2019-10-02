@@ -30,6 +30,7 @@ def metadata_factory(repo, json=False, **kwargs):
             "KeywordDetector": {
                 'keyword_exclude': None
             },
+            "JwtTokenDetector": {},
             "MailchimpDetector": {},
             "PrivateKeyDetector": {},
             "SlackDetector": {},

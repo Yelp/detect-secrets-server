@@ -75,6 +75,7 @@ class TestInitialize(object):
                     'HexHighEntropyString': {
                         'hex_limit': 3,
                     },
+                    'JwtTokenDetector': {},
                     'MailchimpDetector': {},
                     'KeywordDetector': {
                         'keyword_exclude': None,
@@ -183,6 +184,7 @@ class TestInitialize(object):
                     'HexHighEntropyString': {
                         'hex_limit': 4.0,
                     },
+                    'JwtTokenDetector': {},
                     'MailchimpDetector': {},
                     'KeywordDetector': {
                         'keyword_exclude': None,
