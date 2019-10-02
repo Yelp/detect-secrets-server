@@ -28,7 +28,6 @@ class TestInstallCron(object):
                 ).split()
             )
 
-
     def test_writes_crontab(self, mock_crontab, mock_rootdir, mock_metadata):
         args = self.parse_args(mock_rootdir)
         with mock_metadata(
