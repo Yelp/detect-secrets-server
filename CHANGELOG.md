@@ -25,6 +25,18 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+
+### v0.2.17
+##### October 15th, 2019
+
+#### :bug: Bugfixes
+
+* Fixed a bug where our cron functionality didn't handle a custom root directory ([#36], thanks [@gsoyka])
+
+[#36]: https://github.com/Yelp/detect-secrets-server/pull/36
+
+
+
 ### v0.2.16
 ##### October 2nd, 2019
 
@@ -243,8 +255,10 @@ your support! :star:
 
 
 
-# Special thanks to our awesome contributor! :clap:
+# Special thanks to our awesome contributors! :clap:
 
+- [@gsoyka]
 - [@mindfunk]
 
+[@gsoyka]: https://github.com/gsoyka
 [@mindfunk]: https://github.com/mindfunk
