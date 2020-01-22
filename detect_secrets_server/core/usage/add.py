@@ -78,23 +78,12 @@ class AddOptions(CommonOptions):
             ),
         )
 
-        # parser.add_argument(
-        #     '--exclude-regex',
-        #     type=str,
-        #     nargs=1,
-        #     help=(
-        #         'This regex will be added to repo metadata files when '
-        #         'adding a repository or overriding an existing one.'
-        #     ),
-        #     metavar='REGEX',
-        # )
-
         parser.add_argument(
             '--exclude-files-regex',
             type=str,
             nargs=1,
             help=(
-                'This regex will be added to repo metadata files when '
+                'This regex will be added to repo metadata for files when '
                 'adding a repository or overriding an existing one.'
             ),
             metavar='PYTHON_REGEX',
@@ -105,7 +94,7 @@ class AddOptions(CommonOptions):
             type=str,
             nargs=1,
             help=(
-                'This regex will be added to repo metadata files when '
+                'This regex will be added to repo metadata for lines when '
                 'adding a repository or overriding an existing one.'
             ),
             metavar='PYTHON_REGEX',
