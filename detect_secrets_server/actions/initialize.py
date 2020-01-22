@@ -16,7 +16,9 @@ def add_repo(args):
         plugins=args.plugins,
         rootdir=args.root_dir,
         baseline_filename=args.baseline,
-        exclude_regex=args.exclude_regex,
+        #exclude_regex=args.exclude_regex,
+        exclude_files_regex=args.exclude_files_regex,
+        exclude_lines_regex=args.exclude_lines_regex,
 
         is_local=args.local,
         s3_config=args.s3_config if args.storage == 's3' else None,
@@ -38,7 +40,9 @@ def initialize(args):
             sha=repo['sha'],
             plugins=repo['plugins'],
             baseline_filename=repo['baseline'],
-            exclude_regex=repo['exclude_regex'],
+            #exclude_regex=repo['exclude_regex'],
+            exclude_files_regex=repo['exclude_files_regex'],
+            exclude_lines_regex=repo['exclude_lines_regex'],
 
             is_local=repo.get('is_local_repo', False),
             s3_config=args.s3_config if repo['storage'] == 's3' else None,
@@ -59,7 +63,9 @@ def _create_single_tracked_repo(
     plugins,
     rootdir,
     baseline_filename,
-    exclude_regex,
+#    exclude_regex,
+    exclude_files_regex,
+    exclude_lines_regex,
     is_local,
     s3_config,
 ):
@@ -87,7 +93,14 @@ def _create_single_tracked_repo(
             local storage
 
         :type exclude_regex: str
-        :param exclude_regex: filenames that match this regex will be excluded from
+        :param exclude_regex: legacy exclusion that didn't work in detect-server-secrets
+
+        :type exclude_files_regex: str
+        :param exclude_files_regex: filenames that match this regex will be excluded from
+            scanning.
+
+        :type exclude_lines_regex: str
+        :param exclude_lines_regex: lines that match this regex will be excluded from
             scanning.
 
         :type is_local: bool
@@ -110,7 +123,9 @@ def _create_single_tracked_repo(
         plugins=plugins,
         rootdir=rootdir,
         baseline_filename=baseline_filename,
-        exclude_regex=exclude_regex,
+        # exclude_regex=exclude_regex,
+        exclude_files_regex=exclude_files_regex,
+        exclude_lines_regex=exclude_lines_regex,
 
         s3_config=s3_config,
     )

@@ -78,8 +78,30 @@ class AddOptions(CommonOptions):
             ),
         )
 
+        # parser.add_argument(
+        #     '--exclude-regex',
+        #     type=str,
+        #     nargs=1,
+        #     help=(
+        #         'This regex will be added to repo metadata files when'
+        #         'adding a repository or overriding an existing one.'
+        #     ),
+        #     metavar='REGEX',
+        # )
+
         parser.add_argument(
-            '--exclude-regex',
+            '--exclude-files-regex',
+            type=str,
+            nargs=1,
+            help=(
+                'This regex will be added to repo metadata files when'
+                'adding a repository or overriding an existing one.'
+            ),
+            metavar='REGEX',
+        )
+
+        parser.add_argument(
+            '--exclude-lines-regex',
             type=str,
             nargs=1,
             help=(
@@ -127,8 +149,14 @@ def _consolidate_initialize_args(args):
     if args.baseline:
         args.baseline = args.baseline[0]
 
-    if args.exclude_regex:
-        args.exclude_regex = args.exclude_regex[0]
+    # if args.exclude_regex:
+    #     args.exclude_regex = args.exclude_regex[0]
+
+    if args.exclude_files_regex:
+        args.exclude_files_regex = args.exclude_files_regex[0]
+
+    if args.exclude_lines_regex:
+        args.exclude_lines_regex = args.exclude_lines_regex[0]
 
     if args.crontab:
         args.crontab = args.crontab[0]
@@ -215,6 +243,8 @@ def _should_discard_tracked_repo_in_config(tracked_repo):
             is_valid_file(tracked_repo['repo'])
         else:
             is_git_url(tracked_repo['repo'])
+
+        # TODO: add empty git check here
 
         return False
     except argparse.ArgumentTypeError as e:

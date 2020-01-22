@@ -84,7 +84,7 @@ def apply_default_plugin_options_to_repos(args):
         for key in (
             'baseline',
             'crontab',
-            'exclude_regex',
+            'exclude_regex',  # TODO: is this still needed? how do we handle exclude regex from default config file?
             'storage',
         ):
             if key not in tracked_repo:

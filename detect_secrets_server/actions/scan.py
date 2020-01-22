@@ -26,6 +26,8 @@ def scan_repo(args):
         log.error('Unable to find repo: %s', args.repo)
         return 1
 
+    # TODO: Combine the args and the repo.exclude_files_regex
+
     secrets = repo.scan(
         exclude_files_regex=args.exclude_files,
         exclude_lines_regex=args.exclude_lines,
