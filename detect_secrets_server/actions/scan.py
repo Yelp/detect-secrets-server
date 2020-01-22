@@ -26,11 +26,26 @@ def scan_repo(args):
         log.error('Unable to find repo: %s', args.repo)
         return 1
 
-    # TODO: Combine the args and the repo.exclude_files_regex
+    # Combine the args and repo exclude files / lines, checking for None
+    if (repo.exclude_files_regex is None):
+        regex_files = args.exclude_files
+    elif (args.exclude_files is None):
+        regex_files = repo.exclude_files_regex
+    else:
+        regex_files = "|".join([repo.exclude_files_regex, args.exclude_files])
+
+    if (repo.exclude_lines_regex is None):
+        regex_lines = args.exclude_lines
+    elif (args.exclude_lines is None):
+        regex_lines = repo.exclude_lines_regex
+    else:
+        regex_lines = "|".join([repo.exclude_lines_regex, args.exclude_lines])
 
     secrets = repo.scan(
-        exclude_files_regex=args.exclude_files,
-        exclude_lines_regex=args.exclude_lines,
+        # exclude_files_regex=args.exclude_files,
+        # exclude_lines_regex=args.exclude_lines,
+        exclude_files_regex=regex_files,
+        exclude_lines_regex=regex_lines
     )
 
     if (len(secrets.data) > 0) or args.always_run_output_hook:

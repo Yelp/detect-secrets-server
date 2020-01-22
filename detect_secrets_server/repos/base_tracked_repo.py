@@ -144,10 +144,9 @@ class BaseTrackedRepo(object):
 
         default_plugins = initialize_plugins.from_parser_builder(
             self.plugin_config,
-            exclude_lines_regex=exclude_lines_regex, # TODO: does this actually do something? pass exclude lines to keyword exclude?
+            exclude_lines_regex=exclude_lines_regex,
         )
-        # TODO Issue 17: Ignoring self.exclude_regex, using the server scan CLI arg
-        # combine self.exclude and variables into one regex
+
         secrets = SecretsCollection(
             plugins=default_plugins,
             exclude_files=exclude_files_regex,

@@ -48,7 +48,9 @@ class TestLoadFromFile(object):
             },
         }
         assert repo.baseline_filename == 'foobar'
-        assert not repo.exclude_regex
+        # assert not repo.exclude_regex
+        assert not repo.exclude_files_regex
+        assert not repo.exclude_lines_regex
         assert isinstance(repo.storage, FileStorage)
 
     def test_no_file_found(self, mock_rootdir):

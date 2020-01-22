@@ -83,7 +83,7 @@ class AddOptions(CommonOptions):
         #     type=str,
         #     nargs=1,
         #     help=(
-        #         'This regex will be added to repo metadata files when'
+        #         'This regex will be added to repo metadata files when '
         #         'adding a repository or overriding an existing one.'
         #     ),
         #     metavar='REGEX',
@@ -94,10 +94,10 @@ class AddOptions(CommonOptions):
             type=str,
             nargs=1,
             help=(
-                'This regex will be added to repo metadata files when'
+                'This regex will be added to repo metadata files when '
                 'adding a repository or overriding an existing one.'
             ),
-            metavar='REGEX',
+            metavar='PYTHON_REGEX',
         )
 
         parser.add_argument(
@@ -105,10 +105,10 @@ class AddOptions(CommonOptions):
             type=str,
             nargs=1,
             help=(
-                'This regex will be added to repo metadata files when'
+                'This regex will be added to repo metadata files when '
                 'adding a repository or overriding an existing one.'
             ),
-            metavar='REGEX',
+            metavar='PYTHON_REGEX',
         )
 
         return self
@@ -243,8 +243,6 @@ def _should_discard_tracked_repo_in_config(tracked_repo):
             is_valid_file(tracked_repo['repo'])
         else:
             is_git_url(tracked_repo['repo'])
-
-        # TODO: add empty git check here
 
         return False
     except argparse.ArgumentTypeError as e:

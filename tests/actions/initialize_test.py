@@ -86,7 +86,9 @@ class TestInitialize(object):
                 },
                 rootdir=mock_rootdir,
                 baseline_filename=None,
-                exclude_regex=None,
+                # exclude_regex=None,
+                exclude_files_regex=None,
+                exclude_lines_regex=None,
                 s3_config=None,
             )
 
@@ -155,7 +157,9 @@ class TestInitialize(object):
                     baseline_filename='will_be_overriden',
 
                     # This checks it overrides default value (non-plugin)
-                    exclude_regex='something_here',
+                    # exclude_regex='something_here',
+                    exclude_files_regex='something here',
+                    exclude_lines_regex='something else here',
                     crontab='* * 4 * *',
                 )
             ],
@@ -194,7 +198,9 @@ class TestInitialize(object):
                 },
                 rootdir=mock_rootdir,
                 baseline_filename='baseline.file',
-                exclude_regex='something_here',
+                # exclude_regex='something_here',
+                exclude_files_regex='something here',
+                exclude_lines_regex='something else here',
                 s3_config=None,
             )
 

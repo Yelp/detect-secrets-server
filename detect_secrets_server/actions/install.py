@@ -41,8 +41,6 @@ def _install_cron(args):
             command += ' {}'.format(args.output_hook_command)
         jobs.append(command.strip())
 
-    # TODO: Add exclude regexes into commandline
-
     # Construct new crontab
     content = '\n'.join(jobs)
     if old_content:
