@@ -81,7 +81,6 @@ def apply_default_plugin_options_to_repos(args):
         for key in (
             'baseline',
             'crontab',
-            # 'exclude_regex',
             'exclude_files_regex',
             'exclude_lines_regex',
             'storage',

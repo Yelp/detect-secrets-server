@@ -149,9 +149,6 @@ def _consolidate_initialize_args(args):
     if args.baseline:
         args.baseline = args.baseline[0]
 
-    # if args.exclude_regex:
-    #     args.exclude_regex = args.exclude_regex[0]
-
     if args.exclude_files_regex:
         args.exclude_files_regex = args.exclude_files_regex[0]
 

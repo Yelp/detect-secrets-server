@@ -2,6 +2,8 @@ tracked:
   -   repo: git@github.com:yelp/detect-secrets.git
       crontab: "* * 4 * *"
       sha: ce9232e49873ff11cf3f377d755aa033253328ed
+      exclude_files_regex: ^(\.git|build|logs|node_modules|virtualenv_run)|.*tests/.*
+      exclude_lines_regex: abcdefghijklmnopqrstuvwxyz
       is_local_repo: False
       plugins:
         Base64HighEntropyString:

@@ -16,7 +16,6 @@ def add_repo(args):
         plugins=args.plugins,
         rootdir=args.root_dir,
         baseline_filename=args.baseline,
-        # exclude_regex=args.exclude_regex,
         exclude_files_regex=args.exclude_files_regex,
         exclude_lines_regex=args.exclude_lines_regex,
 
@@ -40,7 +39,6 @@ def initialize(args):
             sha=repo['sha'],
             plugins=repo['plugins'],
             baseline_filename=repo['baseline'],
-            # exclude_regex=repo['exclude_regex'],
             exclude_files_regex=repo['exclude_files_regex'],
             exclude_lines_regex=repo['exclude_lines_regex'],
 
@@ -63,7 +61,6 @@ def _create_single_tracked_repo(
     plugins,
     rootdir,
     baseline_filename,
-    #    exclude_regex,
     exclude_files_regex,
     exclude_lines_regex,
     is_local,
@@ -91,9 +88,6 @@ def _create_single_tracked_repo(
         :type rootdir: str
         :param rootdir: location of where you want to clone the repo for
             local storage
-
-        :type exclude_regex: str
-        :param exclude_regex: legacy exclusion that didn't work in detect-server-secrets
 
         :type exclude_files_regex: str
         :param exclude_files_regex: filenames that match this regex will be excluded from
@@ -123,7 +117,6 @@ def _create_single_tracked_repo(
         plugins=plugins,
         rootdir=rootdir,
         baseline_filename=baseline_filename,
-        # exclude_regex=exclude_regex,
         exclude_files_regex=exclude_files_regex,
         exclude_lines_regex=exclude_lines_regex,
 

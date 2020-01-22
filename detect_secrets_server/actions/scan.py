@@ -42,8 +42,6 @@ def scan_repo(args):
         regex_lines = "|".join([repo.exclude_lines_regex, args.exclude_lines])
 
     secrets = repo.scan(
-        # exclude_files_regex=args.exclude_files,
-        # exclude_lines_regex=args.exclude_lines,
         exclude_files_regex=regex_files,
         exclude_lines_regex=regex_lines
     )

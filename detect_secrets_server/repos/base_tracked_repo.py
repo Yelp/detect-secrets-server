@@ -33,7 +33,6 @@ class BaseTrackedRepo(object):
         sha,
         plugins,
         baseline_filename,
-        # exclude_regex,
         exclude_files_regex,
         exclude_lines_regex,
         crontab='',
@@ -54,16 +53,13 @@ class BaseTrackedRepo(object):
         :type rootdir: str
         :param rootdir: the directory to clone git repositories to.
 
-        :type exclude_regex: str
-        :param exclude_regex: legacy exclude regex that doesn't do anything
-
         :type exclude_files_regex: str
         :param exclude_files_regex: used for repository scanning; if a filename
-            matches this exclude_regex, it is not scanned.
+            matches this exclude regex, it is not scanned.
 
         :type exclude_lines_regex: str
         :param exclude_lines_regex: used for repository scanning; if a line
-            matches this exclude_regex, it is not scanned.
+            matches this exclude regex, it is not scanned.
 
         :type crontab: str
         :param crontab: crontab syntax, for periodic scanning.
@@ -78,7 +74,6 @@ class BaseTrackedRepo(object):
         self.crontab = crontab
         self.plugin_config = plugins
         self.baseline_filename = baseline_filename
-        # self.exclude_regex = exclude_regex
         self.exclude_files_regex = exclude_files_regex
         self.exclude_lines_regex = exclude_lines_regex
 
@@ -216,7 +211,6 @@ class BaseTrackedRepo(object):
             'crontab': self.crontab,
 
             'baseline_filename': self.baseline_filename,
-            # 'exclude_regex': self.exclude_regex,
             'exclude_files_regex': self.exclude_files_regex,
             'exclude_lines_regex': self.exclude_lines_regex,
 
