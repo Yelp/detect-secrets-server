@@ -83,9 +83,9 @@ class BaseStorage(object):
     def fetch_new_changes(self):
         git.fetch_new_changes(self._repo_location)
 
-    def get_diff(self, from_sha):
+    def get_diff(self, from_sha, files=None):
         try:
-            return git.get_diff(self._repo_location, from_sha)
+            return git.get_diff(self._repo_location, from_sha, files=files)
         except subprocess.CalledProcessError:
             # This sometimes complains, if the hash does not exist.
             # There could be a variety of reasons for this, including:
@@ -102,6 +102,9 @@ class BaseStorage(object):
             )
 
             raise
+
+    def get_diff_name_only(self, from_sha):
+        return git.get_diff_name_only(self._repo_location, from_sha)
 
     def _construct_debugging_output(self, sha):  # pragma: no cover
         alert = {
@@ -133,6 +136,9 @@ class BaseStorage(object):
 
     def get_last_commit_hash(self):
         return git.get_last_commit_hash(self._repo_location)
+
+    def get_empty_repo_commit_hash(self):
+        return git.get_empty_tree_commit_hash()
 
     def get_baseline_file(self, baseline_filename):
         return git.get_baseline_file(

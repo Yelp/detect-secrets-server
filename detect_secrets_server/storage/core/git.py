@@ -7,6 +7,8 @@ import subprocess
 
 from detect_secrets_server.constants import IGNORED_FILE_EXTENSIONS
 
+GIT_EMPTY_TREE_HASH = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+
 
 def get_last_commit_hash(directory):
     return _git(
@@ -14,6 +16,10 @@ def get_last_commit_hash(directory):
         'rev-parse',
         'HEAD',
     )
+
+
+def get_empty_repo_commit_hash():
+    return GIT_EMPTY_TREE_HASH
 
 
 def clone_repo_to_location(repo, directory):
@@ -90,7 +96,7 @@ def get_baseline_file(directory, filename):
             raise
 
 
-def get_diff(directory, last_commit_hash):
+def get_diff(directory, last_commit_hash, files=None):
     """Returns the git diff between last commit hash, and HEAD."""
     kwargs = {'should_strip_output': False}
     git_args = [
@@ -99,7 +105,12 @@ def get_diff(directory, last_commit_hash):
         last_commit_hash,
         'HEAD',
     ]
-    filenames_to_include_in_diff = _filter_filenames_from_diff(directory, last_commit_hash)
+
+    if not files:
+        filenames_to_include_in_diff = _filter_filenames_from_diff(directory, last_commit_hash)
+    else:
+        filenames_to_include_in_diff = files
+
     if (
         filenames_to_include_in_diff
         and
@@ -120,6 +131,10 @@ def get_diff(directory, last_commit_hash):
         # Python 2 made me do this
         **kwargs
     )
+
+
+def get_diff_name_only(directory, last_commit_hash):
+    return _filter_filenames_from_diff(directory, last_commit_hash)
 
 
 def get_remote_url(directory):

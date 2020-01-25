@@ -143,17 +143,21 @@ class BaseTrackedRepo(object):
         )
 
         try:
-            diff = self.storage.get_diff(self.last_commit_hash)
+            diff_name_only = self.storage.get_diff_name_only(self.last_commit_hash)
+
+            # do a per-file diff + scan so we don't get a OOM if the the commit-diff is too large
+            for filename in diff_name_only:
+                file_diff = self.storage.get_diff(self.last_commit_hash, [filename])
+
+                secrets.scan_diff(
+                    file_diff,
+                    baseline_filename=self.baseline_filename,
+                    last_commit_hash=self.last_commit_hash,
+                    repo_name=self.name,
+                )
         except subprocess.CalledProcessError:
             self.update()
             return secrets
-
-        secrets.scan_diff(
-            diff,
-            baseline_filename=self.baseline_filename,
-            last_commit_hash=self.last_commit_hash,
-            repo_name=self.name,
-        )
 
         if self.baseline_filename:
             baseline = self.storage.get_baseline_file(self.baseline_filename)
