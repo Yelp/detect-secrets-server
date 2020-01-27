@@ -2,9 +2,9 @@ from __future__ import absolute_import
 
 from detect_secrets.core.log import log
 
+from detect_secrets_server.actions.initialize import _clone_and_save_repo
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.factory import tracked_repo_factory
-from detect_secrets_server.actions.initialize import _clone_and_save_repo
 
 try:
     FileNotFoundError
