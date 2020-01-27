@@ -29,13 +29,14 @@ def scan_repo(args):
     secrets = repo.scan(
         exclude_files_regex=args.exclude_files,
         exclude_lines_regex=args.exclude_lines,
+        scan_head=args.scan_head,
     )
 
     if (len(secrets.data) > 0) or args.always_run_output_hook:
         _alert_on_secrets_found(repo, secrets.json(), args.output_hook)
 
     if args.always_update_state or (
-        len(secrets.data) == 0 and not args.dry_run
+        len(secrets.data) == 0 and not args.dry_run and not args.scan_head
     ):
         _update_tracked_repo(repo)
 

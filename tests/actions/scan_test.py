@@ -106,6 +106,15 @@ class TestScanRepo(object):
 
         assert not mock_file_operations.write.called
 
+    def test_does_not_write_state_when_scan_head(self, mock_file_operations):
+        with self.setup_env(
+            SecretsCollection(),
+            '--scan-head',
+        ) as args:
+            assert scan_repo(args) == 0
+
+        assert not mock_file_operations.write.called
+
     def test_always_writes_state_with_always_update_state_flag(
         self,
         mock_file_operations,

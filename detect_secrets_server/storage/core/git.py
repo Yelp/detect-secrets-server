@@ -18,7 +18,7 @@ def get_last_commit_hash(directory):
     )
 
 
-def get_empty_repo_commit_hash():
+def get_empty_tree_commit_hash():
     return GIT_EMPTY_TREE_HASH
 
 

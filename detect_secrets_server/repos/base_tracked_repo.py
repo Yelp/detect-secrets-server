@@ -114,7 +114,7 @@ class BaseTrackedRepo(object):
     def name(self):
         return self.storage.repository_name
 
-    def scan(self, exclude_files_regex=None, exclude_lines_regex=None):
+    def scan(self, exclude_files_regex=None, exclude_lines_regex=None, scan_head=False):
         """Fetches latest changes, and scans the git diff between last_commit_hash
         and HEAD.
 
@@ -142,17 +142,18 @@ class BaseTrackedRepo(object):
             exclude_lines=exclude_lines_regex,
         )
 
+        scan_from_this_commit = self.storage.get_empty_repo_commit_hash() if scan_head else self.last_commit_hash
         try:
-            diff_name_only = self.storage.get_diff_name_only(self.last_commit_hash)
+            diff_name_only = self.storage.get_diff_name_only(scan_from_this_commit)
 
             # do a per-file diff + scan so we don't get a OOM if the the commit-diff is too large
             for filename in diff_name_only:
-                file_diff = self.storage.get_diff(self.last_commit_hash, [filename])
+                file_diff = self.storage.get_diff(scan_from_this_commit, [filename])
 
                 secrets.scan_diff(
                     file_diff,
                     baseline_filename=self.baseline_filename,
-                    last_commit_hash=self.last_commit_hash,
+                    last_commit_hash=scan_from_this_commit,
                     repo_name=self.name,
                 )
         except subprocess.CalledProcessError:
