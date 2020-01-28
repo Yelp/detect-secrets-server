@@ -224,7 +224,7 @@ class TestAddRepo(object):
             ),
         )
 
-    def test_never_override_meta_tracking_if_already_exists(
+    def test_override_meta_tracking_if_already_exists(
         self,
         mock_file_operations,
         mock_rootdir,
@@ -237,7 +237,7 @@ class TestAddRepo(object):
         ):
             self.add_non_local_repo(mock_rootdir)
 
-        assert not mock_file_operations.write.called
+        assert mock_file_operations.write.called
 
     def add_non_local_repo(self, mock_rootdir):
         repo = 'git@github.com:yelp/detect-secrets'
