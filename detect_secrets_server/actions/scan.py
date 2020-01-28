@@ -27,7 +27,7 @@ def scan_repo(args):
         log.error('Unable to find repo: %s', args.repo)
         return 1
 
-    # if last_commit_hash is empty, go ahead and try to reinitalize to see if there's a new base hash
+    # if last_commit_hash is empty, re-clone and see if there's an initial commit hash
     if repo.last_commit_hash is None:
         _clone_and_save_repo(repo)
 
