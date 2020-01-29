@@ -106,12 +106,15 @@ class TestScanRepo(object):
 
         assert not mock_file_operations.write.called
 
-    def test_does_not_write_state_when_scan_head(self, mock_file_operations):
+    def test_scan_head_and_does_not_write_state_when_scan_head(self, mock_file_operations):
         with self.setup_env(
             SecretsCollection(),
             '--scan-head',
         ) as args:
-            assert scan_repo(args) == 0
+            with mock.patch('detect_secrets_server.actions.scan.tracked_repo_factory') as mock_repo_factory:
+                assert scan_repo(args) == 0
+                mock_repo = mock_repo_factory.return_value.load_from_file.return_value
+                mock_repo.scan.assert_called_once_with(exclude_files_regex=None, exclude_lines_regex=None, scan_head=True)
 
         assert not mock_file_operations.write.called
 
