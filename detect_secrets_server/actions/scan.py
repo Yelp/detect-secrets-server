@@ -35,12 +35,12 @@ def scan_repo(args):
     if (len(secrets.data) > 0) or args.always_run_output_hook:
         _alert_on_secrets_found(repo, secrets.json(), args.output_hook)
 
-    if args.always_update_state or not (
-        len(secrets.data) != 0
-        or
-        args.dry_run
-        or
-        args.scan_head
+    if args.always_update_state or (
+        (len(secrets.data) == 0)
+        and
+        (not args.dry_run)
+        and
+        (not args.scan_head)
     ):
         _update_tracked_repo(repo)
 

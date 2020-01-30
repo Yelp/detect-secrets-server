@@ -110,11 +110,13 @@ class TestScanRepo(object):
         with self.setup_env(
             SecretsCollection(),
             '--scan-head',
-        ) as args:
-            with mock.patch('detect_secrets_server.actions.scan.tracked_repo_factory') as mock_repo_factory:
-                assert scan_repo(args) == 0
-                mock_repo = mock_repo_factory.return_value.load_from_file.return_value
-                mock_repo.scan.assert_called_once_with(exclude_files_regex=None, exclude_lines_regex=None, scan_head=True)
+        ) as args, \
+            mock.patch(
+            'detect_secrets_server.actions.scan.tracked_repo_factory'
+        ) as mock_repo_factory:
+            assert scan_repo(args) == 0
+            mock_repo = mock_repo_factory.return_value.load_from_file.return_value
+            mock_repo.scan.assert_called_once_with(exclude_files_regex=None, exclude_lines_regex=None, scan_head=True)
 
         assert not mock_file_operations.write.called
 
