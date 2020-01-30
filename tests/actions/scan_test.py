@@ -106,17 +106,47 @@ class TestScanRepo(object):
 
         assert not mock_file_operations.write.called
 
-    def test_scan_head_and_does_not_write_state_when_scan_head(self, mock_file_operations):
+    def test_scan_head_and_does_not_write_state_when_scan_head(
+        self,
+        mock_file_operations,
+        mock_logger,
+    ):
+        secrets = secrets_collection_factory([
+            {
+                'filename': 'file_with_secrets',
+                'lineno': 5,
+            },
+        ])
+
         with self.setup_env(
-            SecretsCollection(),
+            secrets,
             '--scan-head',
-        ) as args, \
-            mock.patch(
-            'detect_secrets_server.actions.scan.tracked_repo_factory'
-        ) as mock_repo_factory:
+        ) as args:
+
+            secret_hash = list(
+                secrets.data['file_with_secrets'].values()
+            )[0].secret_hash
+
+            args.output_hook = mock_external_hook(
+                'yelp/detect-secrets',
+                {
+                    'file_with_secrets': [{
+                        'type': 'type',
+                        'hashed_secret': secret_hash,
+                        'is_verified': False,
+                        'line_number': 5,
+                        'author': 'khock',
+                        'commit': 'new_sha',
+                    }],
+                },
+            )
+
             assert scan_repo(args) == 0
-            mock_repo = mock_repo_factory.return_value.load_from_file.return_value
-            mock_repo.scan.assert_called_once_with(exclude_files_regex=None, exclude_lines_regex=None, scan_head=True)
+
+        mock_logger.error.assert_called_with(
+            'Secrets found in %s',
+            'yelp/detect-secrets',
+        )
 
         assert not mock_file_operations.write.called
 
