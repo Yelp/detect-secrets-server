@@ -233,7 +233,8 @@ def mock_tracked_file(sha):
         },
         'crontab': '* * 4 * *',
         'baseline_filename': None,
-        'exclude_regex': None,
+        'exclude_files_regex': None,
+        'exclude_lines_regex': None
     }
 
 

@@ -42,12 +42,14 @@ class TestAddOptions(UsageTest):
         args = self.parse_args(
             'add examples -L '
             '--baseline .baseline '
-            '--exclude-regex regex '
+            '--exclude-files-regex regex '
+            '--exclude-lines-regex regex '
             '--root-dir /tmp'
         )
 
         assert args.baseline == '.baseline'
-        assert args.exclude_regex == 'regex'
+        assert args.exclude_files_regex == 'regex'
+        assert args.exclude_lines_regex == 'regex'
         assert args.root_dir == '/tmp'
 
     def test_local_config_does_not_make_sense(self):

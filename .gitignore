@@ -5,6 +5,11 @@
 *.egg-info
 .tox
 venv
+/bin
+/lib
+/include
+/repos
+/tracked
 /tmp
 
 

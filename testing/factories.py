@@ -16,7 +16,8 @@ def metadata_factory(repo, json=False, **kwargs):
     output = {
         "baseline_filename": None,
         "crontab": "0 0 * * *",
-        "exclude_regex": None,
+        "exclude_files_regex": None,
+        "exclude_lines_regex": None,
         "plugins": {
             "AWSKeyDetector": {},
             "ArtifactoryDetector": {},
