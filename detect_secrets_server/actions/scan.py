@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from detect_secrets.core.log import log
 
+from detect_secrets_server.actions.initialize import _clone_and_save_repo
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.factory import tracked_repo_factory
 
@@ -40,6 +41,10 @@ def scan_repo(args):
         regex_lines = repo.exclude_lines_regex
     else:
         regex_lines = "|".join([repo.exclude_lines_regex, args.exclude_lines])
+
+    # if last_commit_hash is empty, re-clone and see if there's an initial commit hash
+    if repo.last_commit_hash is None:
+        _clone_and_save_repo(repo)
 
     secrets = repo.scan(
         exclude_files_regex=regex_files,

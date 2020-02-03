@@ -135,6 +135,7 @@ def _clone_and_save_repo(repo):
     # Make the last_commit_hash of repo point to HEAD
     if not repo.last_commit_hash:
         repo.update()
+        return repo.save(OverrideLevel.ALWAYS)
 
     # Save the last_commit_hash, if we have nothing on file already
     return repo.save(OverrideLevel.ALWAYS)
