@@ -1,19 +1,5 @@
 #!/usr/bin/env python3.6		            '
 """
-Sample detect-secrets-server scan output:
-{
-  "path/to/file": [
-    {
-      "author": "namenamename",
-      "commit": "8812de6...",
-      "hashed_secret": "b27e894...",
-      "is_verified": false,
-      "line_number": 5,
-      "type": "Hex High Entropy String"
-    }
-  ]
-}
-
 Sample config.ini
 [Slack]
 webhook = https://hooks.slack.com/services/TXXXXX/BXXXXX

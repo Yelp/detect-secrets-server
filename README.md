@@ -209,3 +209,11 @@ $ detect-secrets-server scan yelp/detect-secrets \
 	--output-hook pysensu \
 	--output-config examples/pysensu.config.yaml
 ```
+
+#### Slack
+
+For Python 3 users, you can utilize the example Slack webhook script under 
+`examples/slack_webhook.py`. You'll need to add a `config.ini` with your Slack webhook 
+URL. This pretty formats the JSON and also builds a direct URL to the repos to help quickly
+review. You'll need to add the [slack_webhook dependency](https://pypi.org/project/slack-webhook/). 
+```
