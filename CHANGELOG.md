@@ -26,6 +26,14 @@ your support! :star:
 -->
 
 
+### v0.2.18
+##### February 4th, 2020
+
+#### :tada: New Features
+
+* [Add ability to scan repo HEAD](https://github.com/Yelp/detect-secrets-server/commit/17e57e7ce3e60772cec96f3ad424d74684b3fdaf)
+
+
 ### v0.2.17
 ##### October 15th, 2019
 
