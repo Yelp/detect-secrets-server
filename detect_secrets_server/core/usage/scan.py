@@ -32,6 +32,14 @@ class ScanOptions(CommonOptions):
             ),
         )
         self.parser.add_argument(
+            '--scan-head',
+            action='store_true',
+            help=(
+                'Scan the entire repo as opposed to diffs'
+            ),
+
+        )
+        self.parser.add_argument(
             '--always-update-state',
             action='store_true',
             help=(
@@ -49,6 +57,7 @@ class ScanOptions(CommonOptions):
             ),
             metavar='REGEX',
         )
+
         self.parser.add_argument(
             '--exclude-lines',
             type=str,
