@@ -92,9 +92,20 @@ def get_baseline_file(directory, filename):
 
         # Some repositories may not have baselines.
         # If so, this is a non-breaking error.
-        if not re.match(
-            r"fatal: Path '[^']+' does not exist",
-            error_message,
+        if not (
+            re.match(
+                r"fatal: Path '[^']+' does not exist",
+                error_message,
+            )
+            or
+            # It is possible for the directory you are running detect-secret-server from
+            # to also contain a file with the name <secrets baseline filename>, but
+            # is not part of the repo being scanned.
+            # This will create a different error message, which we also want to catch.
+            re.match(
+                r"fatal: Path '[^']+' exists on disk, but not in 'HEAD'",
+                error_message,
+            )
         ):
             raise
 
