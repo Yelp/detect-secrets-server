@@ -34,6 +34,7 @@ def metadata_factory(repo, json=False, **kwargs):
             "MailchimpDetector": {},
             "PrivateKeyDetector": {},
             "SlackDetector": {},
+            'SoftlayerDetector': {},
             "StripeDetector": {},
         },
         "repo": repo,
