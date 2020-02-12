@@ -1,6 +1,5 @@
 from abc import ABCMeta
-
-import mock
+from unittest import mock
 
 from .util import cache_buster
 from detect_secrets_server.core.usage.parser import ServerParserBuilder
