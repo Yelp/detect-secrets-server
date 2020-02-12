@@ -5,8 +5,7 @@ import json
 from collections import namedtuple
 from contextlib import contextmanager
 from subprocess import CalledProcessError
-
-import mock
+from unittest import mock
 
 from detect_secrets_server.util.version import is_python_2
 

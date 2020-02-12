@@ -1,10 +1,8 @@
-from __future__ import absolute_import
-
 import json
 import textwrap
 from contextlib import contextmanager
+from unittest import mock
 
-import mock
 import pytest
 from detect_secrets.core.secrets_collection import SecretsCollection
 

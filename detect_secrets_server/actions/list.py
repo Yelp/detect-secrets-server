@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
-
 from detect_secrets_server.storage.file import FileStorageWithLocalGit
 from detect_secrets_server.storage.s3 import S3Storage
 

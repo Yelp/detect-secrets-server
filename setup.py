@@ -30,20 +30,12 @@ setup(
         'unidiff',
         'python-crontab',
     ],
-    extra_requires={
-        ':python_version=="2.7"': [
-            'future',
-            'enum34',
-            'functools32',
-        ],
-    },
     entry_points={
         'console_scripts': [
             'detect-secrets-server = detect_secrets_server.__main__:main',
         ],
     },
     classifiers=[
-        "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
         "Intended Audience :: Developers",

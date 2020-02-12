@@ -1,11 +1,9 @@
-from __future__ import absolute_import
-
 import os
 import tempfile
 import textwrap
 from contextlib import contextmanager
+from unittest import mock
 
-import mock
 import pytest
 
 from detect_secrets_server.actions.install import install_mapper

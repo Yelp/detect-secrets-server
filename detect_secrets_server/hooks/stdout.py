@@ -1,8 +1,6 @@
 """
 Print to stdout.
 """
-from __future__ import print_function
-
 import json
 
 from .base import BaseHook

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import argparse
 
 from detect_secrets.core.usage import ParserBuilder

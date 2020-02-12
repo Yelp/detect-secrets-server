@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import argparse
 import textwrap
 from importlib import import_module

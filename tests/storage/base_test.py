@@ -1,9 +1,7 @@
-from __future__ import absolute_import
-
 import subprocess
 from contextlib import contextmanager
+from unittest import mock
 
-import mock
 import pytest
 
 from detect_secrets_server.storage.base import BaseStorage
