@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from .base_tracked_repo import BaseTrackedRepo
 from .base_tracked_repo import OverrideLevel
 from .local_tracked_repo import LocalTrackedRepo

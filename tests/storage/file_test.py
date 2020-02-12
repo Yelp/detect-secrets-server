@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import json
 
 import pytest
@@ -8,11 +6,6 @@ from .base_test import assert_directories_created
 from detect_secrets_server.storage.file import FileStorage
 from detect_secrets_server.storage.file import FileStorageWithLocalGit
 from testing.mocks import mock_open
-
-try:
-    FileNotFoundError
-except NameError:  # pragma: no cover
-    FileNotFoundError = IOError
 
 
 @pytest.fixture

@@ -1,4 +1,5 @@
-import mock
+from unittest import mock
+
 import pytest
 
 from testing.base_usage_test import UsageTest

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import pytest
 
 from testing.base_usage_test import UsageTest

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from detect_secrets.core.log import log
 
 from detect_secrets_server.actions.initialize import _clone_and_save_repo

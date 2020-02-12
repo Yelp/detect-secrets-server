@@ -1,9 +1,7 @@
-from __future__ import absolute_import
-
 from datetime import datetime
+from unittest import mock
 
 import pytest
-from mock import mock
 
 from detect_secrets_server.storage.s3 import S3Storage
 from testing.mocks import mock_open

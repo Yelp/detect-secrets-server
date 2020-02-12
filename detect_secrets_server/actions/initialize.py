@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from detect_secrets_server.repos.base_tracked_repo import OverrideLevel
 from detect_secrets_server.repos.factory import tracked_repo_factory
 

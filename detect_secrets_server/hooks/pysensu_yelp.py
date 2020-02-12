@@ -26,8 +26,6 @@ Example config file (yaml) format:
 This will send an alert to Sensu, with the above configurations.
 See https://github.com/Yelp/pysensu-yelp for more details.
 """
-from __future__ import absolute_import
-
 import pysensu_yelp
 import yaml
 

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import pytest
 
 from detect_secrets_server.hooks.external import ExternalHook
