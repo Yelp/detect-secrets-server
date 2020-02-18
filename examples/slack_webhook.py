@@ -29,12 +29,12 @@ def main():
 
     filepaths = list(payload.keys())
     for filepath in filepaths:
-        instances = payload[filepath]
-        for instance in instances:
-            author = instance['author']
-            commit = instance['commit']
-            detected_type = instance['type']
-            line_number = instance['line_number']
+        potential_secrets = payload[filepath]
+        for potential_secret in potential_secrets:
+            author = potential_secret['author']
+            commit = potential_secret['commit']
+            detected_type = potential_secret['type']
+            line_number = potential_secret['line_number']
 
             # build the message using Slack's "legacy" attachment
             slack.post(text="<insert funny gerblin gibberish>",
