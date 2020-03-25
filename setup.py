@@ -28,8 +28,12 @@ setup(
         'detect-secrets>=0.13.0',
         'pyyaml',
         'unidiff',
-        'python-crontab',
     ],
+    extras_require={
+        'cron': [
+            'python-crontab',
+        ],
+    },
     entry_points={
         'console_scripts': [
             'detect-secrets-server = detect_secrets_server.__main__:main',

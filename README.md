@@ -28,7 +28,7 @@ Therefore, `detect-secrets-server` accomplishes several things:
 ### Quick Start
 
 ```
-$ pip install detect-secrets-server
+$ pip install detect-secrets-server[cron]
 $ detect-secrets-server add git@github.com:yelp/detect-secrets
 $ detect-secrets-server install cron
 ```
