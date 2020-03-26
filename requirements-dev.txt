@@ -4,7 +4,7 @@ certifi==2019.11.28
 cfgv==3.1.0
 chardet==3.0.4
 coverage==5.0.4
-detect-secrets==0.13.0
+detect-secrets==0.13.1
 distlib==0.3.0
 filelock==3.0.12
 identify==1.4.13

@@ -64,8 +64,9 @@ class TestScan(object):
         with mock_git_calls(*self.git_calls(mock_rootdir)):
             secrets = repo.scan()
 
-        # It matches both HexHighEntropyString and AWSKeyDetector
-        assert len(secrets.data['examples/aws_credentials.json']) == 2
+        # It matches both HexHighEntropyString, AWSKeyDetector and
+        # IBM COS HMAC credentials
+        assert len(secrets.data['examples/aws_credentials.json']) == 3
 
     def test_exclude_files(self, mock_logic, mock_rootdir):
         repo = mock_logic()
@@ -75,15 +76,17 @@ class TestScan(object):
         assert 'examples/aws_credentials.json' not in secrets.data
 
     @pytest.mark.parametrize(
-        'exclude_lines_regex, expected_line_number',
+        'exclude_lines_regex, expected_line_number, expected_num_secrets',
         [
             (
                 r'accessKeyId',
-                3
+                3,
+                2,
             ),
             (
                 r'secretAccessKey',
                 2,
+                1,
             ),
         ],
     )
@@ -93,13 +96,14 @@ class TestScan(object):
         mock_rootdir,
         exclude_lines_regex,
         expected_line_number,
+        expected_num_secrets,
     ):
         repo = mock_logic()
         with mock_git_calls(*self.git_calls(mock_rootdir)):
             secrets = repo.scan(exclude_lines_regex=exclude_lines_regex)
 
         assert len(secrets.data) == 1
-        assert len(secrets.data['examples/aws_credentials.json']) == 1
+        assert len(secrets.data['examples/aws_credentials.json']) == expected_num_secrets
 
         for _, secret in secrets.data['examples/aws_credentials.json'].items():
             assert secret.lineno == expected_line_number
@@ -116,7 +120,7 @@ class TestScan(object):
         with mock_git_calls(*calls):
             secrets = repo.scan()
 
-        assert len(secrets.data['examples/aws_credentials.json']) == 2
+        assert len(secrets.data['examples/aws_credentials.json']) == 3
 
     def test_no_baseline_file_provided(self, mock_logic, mock_rootdir):
         repo = mock_logic(
@@ -125,7 +129,7 @@ class TestScan(object):
         with mock_git_calls(*self.git_calls(mock_rootdir)[:-1]):
             secrets = repo.scan()
 
-        assert len(secrets.data['examples/aws_credentials.json']) == 2
+        assert len(secrets.data['examples/aws_credentials.json']) == 3
 
     def test_scan_with_baseline(self, mock_logic, mock_rootdir):
         baseline = json.dumps({
@@ -141,6 +145,11 @@ class TestScan(object):
                         'hashed_secret': '25910f981e85ca04baf359199dd0bd4a3ae738b6',
                         'line_number': 3,       # does not matter
                     },
+                    {
+                        'type': 'IBM COS HMAC Credentials',
+                        'hashed_secret': '9c6e0753631454e4ab8d896c242dcf4f8300fd57',
+                        'line_number': 3,       # does not matter
+                    },
                 ],
             },
             'exclude_regex': '',
@@ -151,6 +160,9 @@ class TestScan(object):
                 },
                 {
                     'name': 'AWSKeyDetector',
+                },
+                {
+                    'name': 'IbmCosHmacDetector',
                 },
             ],
         })

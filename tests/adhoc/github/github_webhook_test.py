@@ -29,8 +29,7 @@ def test_comment_with_secret(event, action):
     # sure that it supports multi-word bodies (as we would expect in
     # regular usage).
     payload['comment']['body'] = 'multiple words {}'.format(EICAR)
-    if 'action' in payload:
-        payload['action'] = action
+    payload['action'] = action
 
     assert scan_for_secrets(event, payload)
 
@@ -52,8 +51,7 @@ def test_comment_with_secret(event, action):
 )
 def test_comment_no_secret(event, action):
     payload = get_payload(event)
-    if 'action' in payload:
-        payload['action'] = action
+    payload['action'] = action
 
     assert not scan_for_secrets(event, payload)
 
@@ -69,8 +67,7 @@ def test_comment_no_secret(event, action):
 def test_comment_deleted(event):
     payload = get_payload(event)
     payload['comment']['body'] = 'multiple words {}'.format(EICAR)
-    if 'action' in payload:
-        payload['action'] = 'deleted'
+    payload['action'] = 'deleted'
 
     assert not scan_for_secrets(event, payload)
 

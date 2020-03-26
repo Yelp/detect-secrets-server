@@ -46,6 +46,8 @@ def scan_for_secrets(event_type: str, body: Dict[str, Any]) -> str:
     has_results = any([
         line
         for line in f.getvalue().splitlines()
+
+        # NOTE: Expected format: '<DetectorName>: [True/False]'
         if 'True' in line.split(':')[1]
     ])
 
@@ -64,7 +66,7 @@ def _parse_comment(body: Dict[str, Any]) -> Tuple[str, str]:
 
 
 def _parse_issue(body: Dict[str, Any]) -> Tuple[str, str]:
-    if body['action'] not in {'opened', 'edited',}:
+    if body['action'] not in {'opened', 'edited', }:
         # This indicates that this is not an applicable event.
         raise KeyError
 
@@ -79,7 +81,7 @@ def _parse_issue(body: Dict[str, Any]) -> Tuple[str, str]:
 
 
 def _parse_pull_request(body: Dict[str, Any]) -> Tuple[str, str]:
-    if body['action'] not in {'opened', 'edited',}:
+    if body['action'] not in {'opened', 'edited', }:
         # This indicates that this is not an applicable event.
         raise KeyError
 
@@ -87,4 +89,3 @@ def _parse_pull_request(body: Dict[str, Any]) -> Tuple[str, str]:
         body['pull_request']['body'],
         body['pull_request']['html_url'],
     )
-

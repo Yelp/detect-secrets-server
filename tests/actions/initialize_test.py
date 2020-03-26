@@ -15,8 +15,7 @@ from testing.mocks import SubprocessMock
 from testing.util import cache_buster
 
 
-class TestInitialize(object):
-
+class TestInitialize:
     def teardown(self):
         cache_buster()
 
@@ -59,35 +58,11 @@ class TestInitialize(object):
             )
             initialize(args)
 
-            repo_class.assert_called_with(
-                repo='git@github.com:yelp/detect-secrets',
-                sha='',
-                crontab='0 0 * * *',
-                plugins={
-                    'AWSKeyDetector': {},
-                    'ArtifactoryDetector': {},
-                    'Base64HighEntropyString': {
-                        'base64_limit': 4.5,
-                    },
-                    'BasicAuthDetector': {},
-                    'HexHighEntropyString': {
-                        'hex_limit': 3,
-                    },
-                    'JwtTokenDetector': {},
-                    'MailchimpDetector': {},
-                    'KeywordDetector': {
-                        'keyword_exclude': None,
-                    },
-                    'PrivateKeyDetector': {},
-                    'SlackDetector': {},
-                    'SoftlayerDetector': {},
-                    'StripeDetector': {},
-                },
-                rootdir=mock_rootdir,
-                baseline_filename=None,
-                exclude_regex=None,
-                s3_config=None,
-            )
+            kwargs = repo_class.call_args[1]
+            assert kwargs['repo'] == 'git@github.com:yelp/detect-secrets'
+            assert kwargs['sha'] == ''
+            assert kwargs['crontab'] == '0 0 * * *'
+            assert kwargs['rootdir'] == mock_rootdir
 
     @pytest.mark.parametrize(
         'data,expected_repo_class',
@@ -168,39 +143,20 @@ class TestInitialize(object):
         with mock_repo_class('BaseTrackedRepo') as repo_class:
             initialize(args)
 
-            repo_class.assert_called_with(
-                repo='git@github.com:yelp/detect-secrets',
-                sha='',
-                crontab='* * 4 * *',
-                plugins={
-                    # (No PrivateKeyDetector due to being False above)
-                    'ArtifactoryDetector': {},
-                    'AWSKeyDetector': {},
-                    'Base64HighEntropyString': {
-                        'base64_limit': 2.0,
-                    },
-                    'BasicAuthDetector': {},
-                    'HexHighEntropyString': {
-                        'hex_limit': 4.0,
-                    },
-                    'JwtTokenDetector': {},
-                    'MailchimpDetector': {},
-                    'KeywordDetector': {
-                        'keyword_exclude': None,
-                    },
-                    'SlackDetector': {},
-                    'SoftlayerDetector': {},
-                    'StripeDetector': {},
-                },
-                rootdir=mock_rootdir,
-                baseline_filename='baseline.file',
-                exclude_regex='something_here',
-                s3_config=None,
-            )
+            kwargs = repo_class.call_args[1]
+            assert kwargs['repo'] == 'git@github.com:yelp/detect-secrets'
+            assert kwargs['sha'] == ''
+            assert kwargs['crontab'] == '* * 4 * *'
+            # NOTE: This is disabled, since it's `False` above.
+            assert 'PrivateKeyDetector' not in kwargs['plugins']
+            assert kwargs['plugins']['Base64HighEntropyString']['base64_limit'] == 2.0
+            assert kwargs['plugins']['HexHighEntropyString']['hex_limit'] == 4.0
+            assert kwargs['rootdir'] == mock_rootdir
+            assert kwargs['baseline_filename'] == 'baseline.file'
+            assert kwargs['exclude_regex'] == 'something_here'
 
 
-class TestAddRepo(object):
-
+class TestAddRepo:
     @staticmethod
     def parse_args(argument_string='', has_s3=False):
         with mock.patch(
