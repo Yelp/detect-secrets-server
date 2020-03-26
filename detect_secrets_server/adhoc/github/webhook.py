@@ -6,18 +6,18 @@ be leaked, rather than just focusing on secrets in code.
 """
 import io
 from contextlib import redirect_stdout
-from typing import Any
-from typing import Dict
-from typing import Tuple
 
 from detect_secrets.main import main as run_detect_secrets
 
 
-def scan_for_secrets(event_type: str, body: Dict[str, Any]) -> str:
+def scan_for_secrets(event_type, body):
     """
+    :type event_type: str
     :param event_type: a full list can be found
         https://developer.github.com/v3/activity/events/types/
+    :type body: Dict[str, Any]
 
+    :rtype: Optional[str]
     :returns: link to field with leaked secret
     """
     mapping = {
@@ -54,7 +54,11 @@ def scan_for_secrets(event_type: str, body: Dict[str, Any]) -> str:
     return attribution_link if has_results else None
 
 
-def _parse_comment(body: Dict[str, Any]) -> Tuple[str, str]:
+def _parse_comment(body):
+    """
+    :type body: Dict[str, Any]
+    :rtype: Tuple[str, str]
+    """
     if body.get('action', 'created') == 'deleted':
         # This indicates that this is not an applicable event.
         raise KeyError
@@ -65,7 +69,11 @@ def _parse_comment(body: Dict[str, Any]) -> Tuple[str, str]:
     )
 
 
-def _parse_issue(body: Dict[str, Any]) -> Tuple[str, str]:
+def _parse_issue(body):
+    """
+    :type body: Dict[str, Any]
+    :rtype: Tuple[str, str]
+    """
     if body['action'] not in {'opened', 'edited', }:
         # This indicates that this is not an applicable event.
         raise KeyError
@@ -80,7 +88,11 @@ def _parse_issue(body: Dict[str, Any]) -> Tuple[str, str]:
     )
 
 
-def _parse_pull_request(body: Dict[str, Any]) -> Tuple[str, str]:
+def _parse_pull_request(body):
+    """
+    :type body: Dict[str, Any]
+    :rtype: Tuple[str, str]
+    """
     if body['action'] not in {'opened', 'edited', }:
         # This indicates that this is not an applicable event.
         raise KeyError
