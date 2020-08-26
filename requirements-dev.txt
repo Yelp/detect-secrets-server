@@ -30,6 +30,6 @@ toml==0.10.0
 tox==3.14.6
 unidiff==0.5.5
 urllib3==1.25.8
-virtualenv==20.0.14
+virtualenv==16.7.7
 wcwidth==0.1.9
 zipp==1.2.0
