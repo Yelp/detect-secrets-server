@@ -26,6 +26,21 @@ your support! :star:
 -->
 
 
+### v0.3.0
+##### August 26th, 2020
+
+#### :boom: Breaking Changes
+
+* Drop support for Python 3 ([#51])
+
+#### :tada: New Features
+
+* Add a GitHub webhook scanner ([#56])
+
+[#51]: https://github.com/Yelp/detect-secrets-server/pull/51
+[#56]: https://github.com/Yelp/detect-secrets-server/pull/56
+
+
 ### v0.2.20
 ##### February 10th, 2020
 
