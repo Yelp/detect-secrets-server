@@ -25,6 +25,17 @@ your support! :star:
 [@xxxx]: https://github.com/xxxx
 -->
 
+### v0.3.2
+##### August 28th, 2020
+
+#### :snake: Miscellaneous
+
+* Add ability to pass arbritrary arguments to `detect-secrets` ([#65])
+
+[#65]: https://github.com/Yelp/detect-secrets-server/pull/65
+
+
+
 ### v0.3.1
 ##### August 26th, 2020
 
