@@ -21,12 +21,15 @@ except ImportError:  # pragma: no cover
 from detect_secrets.main import main as run_detect_secrets
 
 
-def scan_for_secrets(event_type, body):
+def scan_for_secrets(event_type, body, *args):
     """
     :type event_type: str
     :param event_type: a full list can be found
         https://developer.github.com/v3/activity/events/types/
     :type body: Dict[str, Any]
+    :param body: a GitHub webhook event
+    :type args: List
+    :param args: parameters to pass to detect-secrets directly
 
     :rtype: Optional[str]
     :returns: link to field with leaked secret
@@ -52,6 +55,7 @@ def scan_for_secrets(event_type, body):
         run_detect_secrets([
             'scan',
             '--string', payload,
+            *args,
         ])
 
     has_results = any([

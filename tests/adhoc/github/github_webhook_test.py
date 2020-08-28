@@ -5,6 +5,7 @@ import pytest
 
 from detect_secrets_server.adhoc.github.webhook import scan_for_secrets
 from testing.util import EICAR
+from testing.util import JWT
 
 
 @pytest.mark.parametrize(
@@ -131,6 +132,21 @@ def test_issue_not_applicable(event_key):
     payload[key]['body'] = 'multiple words {}'.format(EICAR)
 
     assert not scan_for_secrets(event, payload)
+
+
+def test_parameter_passing():
+    event = 'commit_comment'
+    payload = get_payload(event)
+    payload['comment']['body'] = JWT
+
+    assert not scan_for_secrets(
+        event,
+        payload,
+        '--no-jwt-scan',
+        # kind of annoying that this is necessary but each part the
+        # JWT is random-looking base64 too
+        '--no-base64-string-scan',
+    )
 
 
 def get_payload(name):
