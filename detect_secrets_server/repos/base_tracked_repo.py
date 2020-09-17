@@ -113,7 +113,7 @@ class BaseTrackedRepo(object):
     def name(self):
         return self.storage.repository_name
 
-    def scan(self, exclude_files_regex=None, exclude_lines_regex=None, scan_head=False):
+    def scan(self, exclude_files_regex=None, exclude_lines_regex=None, scan_head=False, extract_pragmas=False, custom_plugin_paths=()):
         """Fetches latest changes, and scans the git diff between last_commit_hash
         and HEAD.
 
@@ -125,6 +125,12 @@ class BaseTrackedRepo(object):
         :type exclude_lines: str|None
         :param exclude_lines: A regex matching lines to skip over.
 
+        :type scan_head: bool
+        :param scan_head: Enable scan head context.
+
+        :type extract_pragmas: bool
+        :param extract_pragmas: Enable extract pragmas feature.
+
         :rtype: SecretsCollection
         :returns: secrets found.
         """
@@ -132,6 +138,7 @@ class BaseTrackedRepo(object):
 
         default_plugins = initialize_plugins.from_parser_builder(
             self.plugin_config,
+            custom_plugin_paths=custom_plugin_paths,
             exclude_lines_regex=exclude_lines_regex,
         )
         # TODO Issue 17: Ignoring self.exclude_regex, using the server scan CLI arg
@@ -154,6 +161,7 @@ class BaseTrackedRepo(object):
                     baseline_filename=self.baseline_filename,
                     last_commit_hash=scan_from_this_commit,
                     repo_name=self.name,
+                    extract_pragmas=extract_pragmas,
                 )
         except subprocess.CalledProcessError:
             self.update()

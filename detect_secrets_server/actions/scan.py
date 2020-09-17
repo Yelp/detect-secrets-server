@@ -33,10 +33,15 @@ def scan_repo(args):
         exclude_files_regex=args.exclude_files,
         exclude_lines_regex=args.exclude_lines,
         scan_head=args.scan_head,
+        extract_pragmas=args.extract_pragmas,
     )
 
-    if (len(secrets.data) > 0) or args.always_run_output_hook:
+    if (len(secrets.data) > 0 and len(secrets.pragmas) > 0):
+        _alert_on_secrets_pragmas_found(repo, secrets.json(), secrets.pragmas, args.output_hook)
+    elif (len(secrets.data) > 0) or args.always_run_output_hook:
         _alert_on_secrets_found(repo, secrets.json(), args.output_hook)
+    elif (len(secrets.pragmas) > 0):
+        _alert_on_pragmas_found(repo, secrets.pragmas, args.output_hook)
 
     if args.always_update_state or (
         (len(secrets.data) == 0)
@@ -75,6 +80,40 @@ def _alert_on_secrets_found(repo, secrets, output_hook):
     _set_authors_for_found_secrets(repo, secrets)
 
     output_hook.alert(repo.name, secrets)
+
+
+def _alert_on_pragmas_found(repo, pragmas, output_hook):
+    """
+    :type repo: detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo
+
+    :type pragmas: dict
+    :param pragmas: output of json
+
+    :type output_hook: detect_secrets_server.hooks.base.BaseHook
+    """
+    log.error('Pragmas found in %s', repo.name)
+
+    output_hook.alert(repo.name, None, pragmas)
+
+
+def _alert_on_secrets_pragmas_found(repo, secrets, pragmas, output_hook):
+    """
+    :type repo: detect_secrets_server.repos.base_tracked_repo.BaseTrackedRepo
+
+    :type secrets: dict
+    :param secrets: output of
+        detect_secrets.core.secrets_collection.SecretsCollection.json()
+    
+    :type pragmas: dict
+    :param pragmas: output of json
+
+    :type output_hook: detect_secrets_server.hooks.base.BaseHook
+    """
+    log.error('Secrets and Pragmas found in %s', repo.name)
+
+    _set_authors_for_found_secrets(repo, secrets)
+
+    output_hook.alert(repo.name, secrets, pragmas)
 
 
 def _set_authors_for_found_secrets(repo, secrets):

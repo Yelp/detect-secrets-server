@@ -77,6 +77,15 @@ class ScanOptions(CommonOptions):
             ),
         )
 
+        self.parser.add_argument(
+            '--extract-pragmas',
+            action='store_true',
+            help=(
+                'Extract "pragma: allowlist secret" lines from the code, '
+                'and output the report as json.'
+            ),
+        )
+
         self.add_local_flag()
         for option in [PluginOptions, OutputOptions]:
             option(self.parser).add_arguments()

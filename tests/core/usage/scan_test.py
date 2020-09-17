@@ -25,3 +25,9 @@ class TestScanOptions(UsageTest):
                 ' -L examples'
                 ' --output-hook examples/standalone_hook.py'
             )
+    
+    def test_extract_pragmas_flag(self):
+        args = self.parse_args('scan examples -L --extract-pragmas')
+
+        assert args.action == 'scan'
+        assert args.extract_pragmas
