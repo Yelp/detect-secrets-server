@@ -86,6 +86,17 @@ class ScanOptions(CommonOptions):
             ),
         )
 
+        self.parser.add_argument(
+            '--custom-plugins',
+            type=str,
+            default=(),
+            dest='custom_plugin_paths',
+            help=(
+                'Custom plugin Python files, or directories containing them. '
+                'Directories are not searched recursively.'
+            ),
+        )
+
         self.add_local_flag()
         for option in [PluginOptions, OutputOptions]:
             option(self.parser).add_arguments()
