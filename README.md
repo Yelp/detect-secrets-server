@@ -3,6 +3,24 @@
 
 # detect-secrets-server
 
+> :warning: **Yelp has stopped active development** for this repository, for the foreseeable
+> future (2021-04-12).
+>
+> The upstreamed `detect-secrets` package underwent some major improvements to the tool,
+> launching their official public version (v1.0), and fundamentally changing how secrets were
+> scanned and processed. With these changes, Yelp has found success with integrating the tool
+> directly with [Github webhooks](https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#pull_request), transforming the server-side component from a
+> scheduled batch job, to an on-demand diff scan.
+>
+> This repository has not been updated to be compatible with the new version, nor do we know
+> when we might be able to do so.
+>
+> This solution may still be desirable for you, if you want to keep track of multiple repositories,
+> and you don't have access to some feed of pull requests. However, we encourage you to check out
+> some of the new features in `detect-secrets` v1, as you may find the [new
+> architecture](https://github.com/Yelp/detect-secrets/blob/master/docs/design.md) may support
+> your use case, through a much more simple solution.
+
 ## About
 
 `detect-secrets-server` is the server-side counterpart to [`detect-secrets`](
