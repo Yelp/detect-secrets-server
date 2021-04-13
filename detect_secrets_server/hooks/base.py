@@ -11,12 +11,15 @@ class BaseHook(object):  # pragma: no cover
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def alert(self, repo_name, secrets):
+    def alert(self, repo_name, secrets, pragmas=None):
         """
         :type repo_name: str
         :param repo_name: the repository where secrets were found.
 
         :type secrets: dict
         :param secrets: dictionary; where keys are filenames
+
+        :type pragmas: dict (optional)
+        :param pragmas: dictionary; where keys are filenames
         """
         pass
