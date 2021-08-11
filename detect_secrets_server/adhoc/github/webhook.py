@@ -7,18 +7,8 @@ be leaked, rather than just focusing on secrets in code.
 import io
 try:
     from contextlib import redirect_stdout
-except ImportError:  # pragma: no cover
-    import sys
-    from contextlib import contextmanager
-
-    @contextmanager
-    def redirect_stdout(target):
-        original = sys.stdout
-        sys.stdout = target
-        yield
-        sys.stdout = original
-
-from detect_secrets.main import main as run_detect_secrets
+finally:
+    from detect_secrets.main import main as run_detect_secrets
 
 
 def scan_for_secrets(event_type, body, *args):
