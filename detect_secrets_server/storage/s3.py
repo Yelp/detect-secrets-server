@@ -23,12 +23,23 @@ class S3Storage(FileStorage):
         self.secret_access_key = s3_config['secret_access_key']
         self.bucket_name = s3_config['bucket']
         self.prefix = s3_config['prefix']
+        self.base_directory = base_directory
 
         self._initialize_client()
 
     def get(self, key, force_download=True):
         """Downloads file from S3 into local storage."""
         file_on_disk = self.get_tracked_file_location(key)
+
+        # If the base directory does not exist a FileNotFoundError is thrown by s3transfer
+        if not os.path.isdir(self.base_directory):
+            print(f'The base directory {self.base_directory} does not exist.')
+        else:
+            local_dest_path = os.path.join(self.base_directory, 'tracked')
+            if not os.path.isdir(local_dest_path):
+                print(f'{local_dest_path} does not exist. Trying to create it')
+                os.mkdir(local_dest_path)
+
         if force_download or not os.path.exists(file_on_disk):
             self.client.download_file(
                 Bucket=self.bucket_name,
